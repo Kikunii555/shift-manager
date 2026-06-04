@@ -1,31 +1,33 @@
 <!DOCTYPE html>
 <html lang="ja">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>勤務・工程チェッカー</title>
-  
+  <title>指定表チェッカー</title>
+
   <!-- SEO & PWA Meta Tags -->
   <meta name="description" content="電波がないオフライン環境でも動作する、期間ごとの勤務表・作業工程チェックリスト管理アプリ">
   <meta name="theme-color" content="#6366f1">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="工程チェッカー">
-  
+
   <!-- Icons & Manifest -->
   <link rel="apple-touch-icon" href="./icons/icon-192.png">
   <link rel="manifest" href="./manifest.json">
-  
+
   <!-- CSS Stylesheet -->
   <link rel="stylesheet" href="./style.css">
 </head>
+
 <body>
 
   <div class="app-container">
-    
+
     <!-- トップ画面用ヘッダー -->
     <header id="appHeader">
-      <h1>👷 勤務・工程チェッカー</h1>
+      <h1>👷 指定表チェッカー</h1>
       <button class="btn-icon" id="settingsBtn" title="設定・データバックアップ" aria-label="Settings">
         ⚙️
       </button>
@@ -45,7 +47,8 @@
               </div>
               <div>
                 <label for="endDate" style="font-size:0.75rem;">終了日 (自動計算)</label>
-                <input type="date" id="endDate" required readonly style="opacity: 0.8; cursor: not-allowed; background-color: rgba(255,255,255,0.02);">
+                <input type="date" id="endDate" required readonly
+                  style="opacity: 0.8; cursor: not-allowed; background-color: rgba(255,255,255,0.02);">
               </div>
             </div>
           </div>
@@ -90,7 +93,8 @@
         <form id="addTaskForm">
           <label for="newTaskInput" style="display: block; margin-bottom: 8px;">➕ 作業項目を追加する</label>
           <div class="add-task-bar" style="display: flex; flex-direction: column; gap: 10px;">
-            <select id="taskCategorySelect" required style="width: 100%; padding: 14px 16px; border-radius: var(--border-radius); border: 1px solid var(--border-color); background-color: var(--card-bg); color: var(--text-primary); font-family: var(--font-family); font-size: 1rem; outline: none; -webkit-appearance: none; appearance: none; background-image: url('data:image/svg+xml;charset=UTF-8,%3Csvg%20xmlns%3D%22http%3E//www.w3.org/2000/svg%22%20width%3D%2224%22%20height%3D%2224%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22%239ca3af%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpolyline%20points%3D%226%209%2012%2015%2018%209%22%3E%3C/polyline%3E%3C/svg%3E'); background-repeat: no-repeat; background-position: right 16px center; background-size: 16px;">
+            <select id="taskCategorySelect" required
+              style="width: 100%; padding: 14px 16px; border-radius: var(--border-radius); border: 1px solid var(--border-color); background-color: var(--card-bg); color: var(--text-primary); font-family: var(--font-family); font-size: 1rem; outline: none; -webkit-appearance: none; appearance: none; background-image: url('data:image/svg+xml;charset=UTF-8,%3Csvg%20xmlns%3D%22http%3E//www.w3.org/2000/svg%22%20width%3D%2224%22%20height%3D%2224%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22%239ca3af%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpolyline%20points%3D%226%209%2012%2015%2018%209%22%3E%3C/polyline%3E%3C/svg%3E'); background-repeat: no-repeat; background-position: right 16px center; background-size: 16px;">
               <option value="1">1. 作成前の準備段階</option>
               <option value="2">2. 実際にシフトを入れて記入</option>
               <option value="3">3. PCのシステムに入力して上に報告</option>
@@ -99,7 +103,8 @@
             </select>
             <div style="display: flex; gap: 8px; width: 100%;">
               <input type="text" id="newTaskInput" placeholder="例: 各自の要望を再確認する" required autocomplete="off">
-              <button type="submit" class="btn-primary" style="padding: 0 20px; white-space: nowrap;" id="addTaskBtn">追加</button>
+              <button type="submit" class="btn-primary" style="padding: 0 20px; white-space: nowrap;"
+                id="addTaskBtn">追加</button>
             </div>
           </div>
         </form>
@@ -111,24 +116,28 @@
       <div class="modal-content">
         <div class="modal-header">
           <h3 class="modal-title">⚙️ 設定・データ管理</h3>
-          <button class="btn-icon" id="closeModalBtn" style="width:36px; height:36px; border:none; background:none; font-size:1.2rem;" aria-label="Close modal">✕</button>
+          <button class="btn-icon" id="closeModalBtn"
+            style="width:36px; height:36px; border:none; background:none; font-size:1.2rem;"
+            aria-label="Close modal">✕</button>
         </div>
         <div class="modal-body">
           <p style="font-size: 0.85rem; color: var(--text-secondary); line-height: 1.5;">
             このアプリのデータはブラウザの保存領域（ローカルストレージ）にのみ保存されています。<br>
             スマートフォンの機種変更や、念のためのバックアップ用にデータをエクスポートできます。
           </p>
-          
+
           <div class="backup-option">
             <h4 style="font-size: 0.95rem; font-weight: 600;">📤 バックアップをとる</h4>
             <span class="backup-description">現在のデータをJSONファイルとしてダウンロードします。</span>
-            <button class="btn-primary" id="exportBtn" style="padding: 10px 16px; font-size: 0.9rem;">JSONエクスポート</button>
+            <button class="btn-primary" id="exportBtn"
+              style="padding: 10px 16px; font-size: 0.9rem;">JSONエクスポート</button>
           </div>
 
           <div class="backup-option">
             <h4 style="font-size: 0.95rem; font-weight: 600;">📥 データを読み込む</h4>
             <span class="backup-description">以前ダウンロードしたJSONファイルからデータを復元します（※現在のデータは上書きされます）。</span>
-            <button class="btn-primary" id="importBtn" style="padding: 10px 16px; font-size: 0.9rem; background: var(--card-hover); color: var(--text-primary); border: 1px solid var(--border-color); box-shadow: none;">JSONインポート</button>
+            <button class="btn-primary" id="importBtn"
+              style="padding: 10px 16px; font-size: 0.9rem; background: var(--card-hover); color: var(--text-primary); border: 1px solid var(--border-color); box-shadow: none;">JSONインポート</button>
             <input type="file" id="fileInput" accept=".json">
           </div>
         </div>
@@ -143,4 +152,5 @@
   <!-- JS スクリプト -->
   <script src="./app.js"></script>
 </body>
+
 </html>

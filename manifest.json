@@ -1,6 +1,6 @@
 {
-  "name": "勤務・工程チェッカー",
-  "short_name": "工程チェッカー",
+  "name": "指定表チェッカー",
+  "short_name": "指定表チェッカー",
   "description": "オフライン対応の勤務表および作業工程確認チェックリストアプリ",
   "start_url": "./index.html",
   "display": "standalone",
