@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>勤務・工程チェッカー</title>
+  
+  <!-- SEO & PWA Meta Tags -->
+  <meta name="description" content="電波がないオフライン環境でも動作する、期間ごとの勤務表・作業工程チェックリスト管理アプリ">
+  <meta name="theme-color" content="#6366f1">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="工程チェッカー">
+  
+  <!-- Icons & Manifest -->
+  <link rel="apple-touch-icon" href="./icons/icon-192.png">
+  <link rel="manifest" href="./manifest.json">
+  
+  <!-- CSS Stylesheet -->
+  <link rel="stylesheet" href="./style.css">
+</head>
+<body>
+
+  <div class="app-container">
+    
+    <!-- トップ画面用ヘッダー -->
+    <header id="appHeader">
+      <h1>👷 勤務・工程チェッカー</h1>
+      <button class="btn-icon" id="settingsBtn" title="設定・データバックアップ" aria-label="Settings">
+        ⚙️
+      </button>
+    </header>
+
+    <!-- 1. トップ画面 (期間一覧) -->
+    <main id="topView" class="view active">
+      <!-- 期間追加フォーム -->
+      <section class="add-period-section">
+        <form id="addPeriodForm">
+          <div class="form-group">
+            <label>📅 新しい勤務期間を登録する</label>
+            <div class="form-row">
+              <div>
+                <label for="startDate" style="font-size:0.75rem;">開始日</label>
+                <input type="date" id="startDate" required>
+              </div>
+              <div>
+                <label for="endDate" style="font-size:0.75rem;">終了日</label>
+                <input type="date" id="endDate" required>
+              </div>
+            </div>
+          </div>
+          <button type="submit" class="btn-primary" style="width: 100%; margin-top: 12px;" id="addPeriodBtn">
+            ➕ この期間を登録する
+          </button>
+        </form>
+      </section>
+
+      <!-- 期間リスト -->
+      <section class="list-section">
+        <h2 style="font-size: 1rem; margin-bottom: 12px; color: var(--text-secondary);">📋 登録済みの期間一覧</h2>
+        <div id="periodList" class="card-list">
+          <!-- JSで動的に追加されます -->
+        </div>
+      </section>
+    </main>
+
+    <!-- 2. 詳細画面 (作業工程チェックリスト) -->
+    <main id="detailsView" class="view">
+      <!-- 詳細用サブヘッダー -->
+      <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 8px;">
+        <button class="btn-icon" id="backBtn" title="戻る" aria-label="Back">
+          ⬅️
+        </button>
+        <div>
+          <h2 style="font-size: 0.85rem; color: var(--text-secondary); font-weight: 500;">選択中の期間</h2>
+          <div id="detailsTitle" style="font-size: 1.15rem; font-weight: 700; color: var(--text-primary);"></div>
+        </div>
+      </div>
+
+      <!-- 工程チェックリスト -->
+      <section class="checklist-section">
+        <h3 style="font-size: 0.9rem; margin-bottom: 12px; color: var(--text-secondary);">⚙️ 本日の作業工程チェック項目</h3>
+        <div id="checklist" class="checklist-container">
+          <!-- JSで動的に追加されます -->
+        </div>
+      </section>
+
+      <!-- 新規工程項目追加フォーム -->
+      <section class="add-task-section">
+        <form id="addTaskForm">
+          <label for="newTaskInput" style="display: block; margin-bottom: 8px;">➕ 作業項目を追加する</label>
+          <div class="add-task-bar">
+            <input type="text" id="newTaskInput" placeholder="例: 進捗ミーティング、資材確認" required autocomplete="off">
+            <button type="submit" class="btn-primary" style="padding: 0 20px;" id="addTaskBtn">追加</button>
+          </div>
+        </form>
+      </section>
+    </main>
+
+    <!-- バックアップ/設定 モーダル -->
+    <div id="backupModal" class="modal">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3 class="modal-title">⚙️ 設定・データ管理</h3>
+          <button class="btn-icon" id="closeModalBtn" style="width:36px; height:36px; border:none; background:none; font-size:1.2rem;" aria-label="Close modal">✕</button>
+        </div>
+        <div class="modal-body">
+          <p style="font-size: 0.85rem; color: var(--text-secondary); line-height: 1.5;">
+            このアプリのデータはブラウザの保存領域（ローカルストレージ）にのみ保存されています。<br>
+            スマートフォンの機種変更や、念のためのバックアップ用にデータをエクスポートできます。
+          </p>
+          
+          <div class="backup-option">
+            <h4 style="font-size: 0.95rem; font-weight: 600;">📤 バックアップをとる</h4>
+            <span class="backup-description">現在のデータをJSONファイルとしてダウンロードします。</span>
+            <button class="btn-primary" id="exportBtn" style="padding: 10px 16px; font-size: 0.9rem;">JSONエクスポート</button>
+          </div>
+
+          <div class="backup-option">
+            <h4 style="font-size: 0.95rem; font-weight: 600;">📥 データを読み込む</h4>
+            <span class="backup-description">以前ダウンロードしたJSONファイルからデータを復元します（※現在のデータは上書きされます）。</span>
+            <button class="btn-primary" id="importBtn" style="padding: 10px 16px; font-size: 0.9rem; background: var(--card-hover); color: var(--text-primary); border: 1px solid var(--border-color); box-shadow: none;">JSONインポート</button>
+            <input type="file" id="fileInput" accept=".json">
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- トースト通知 -->
+    <div id="toast" class="toast">メッセージ</div>
+
+  </div>
+
+  <!-- JS スクリプト -->
+  <script src="./app.js"></script>
+</body>
+</html>
