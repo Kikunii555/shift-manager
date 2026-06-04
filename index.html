@@ -37,15 +37,15 @@
       <section class="add-period-section">
         <form id="addPeriodForm">
           <div class="form-group">
-            <label>📅 新しい勤務期間を登録する</label>
+            <label>📅 新しい勤務期間を登録する (4週間/28日分)</label>
             <div class="form-row">
               <div>
                 <label for="startDate" style="font-size:0.75rem;">開始日</label>
                 <input type="date" id="startDate" required>
               </div>
               <div>
-                <label for="endDate" style="font-size:0.75rem;">終了日</label>
-                <input type="date" id="endDate" required>
+                <label for="endDate" style="font-size:0.75rem;">終了日 (自動計算)</label>
+                <input type="date" id="endDate" required readonly style="opacity: 0.8; cursor: not-allowed; background-color: rgba(255,255,255,0.02);">
               </div>
             </div>
           </div>
@@ -81,7 +81,7 @@
       <section class="checklist-section">
         <h3 style="font-size: 0.9rem; margin-bottom: 12px; color: var(--text-secondary);">⚙️ 本日の作業工程チェック項目</h3>
         <div id="checklist" class="checklist-container">
-          <!-- JSで動的に追加されます -->
+          <!-- JSで動的にカテゴリ別に描画されます -->
         </div>
       </section>
 
@@ -89,9 +89,18 @@
       <section class="add-task-section">
         <form id="addTaskForm">
           <label for="newTaskInput" style="display: block; margin-bottom: 8px;">➕ 作業項目を追加する</label>
-          <div class="add-task-bar">
-            <input type="text" id="newTaskInput" placeholder="例: 進捗ミーティング、資材確認" required autocomplete="off">
-            <button type="submit" class="btn-primary" style="padding: 0 20px;" id="addTaskBtn">追加</button>
+          <div class="add-task-bar" style="display: flex; flex-direction: column; gap: 10px;">
+            <select id="taskCategorySelect" required style="width: 100%; padding: 14px 16px; border-radius: var(--border-radius); border: 1px solid var(--border-color); background-color: var(--card-bg); color: var(--text-primary); font-family: var(--font-family); font-size: 1rem; outline: none; -webkit-appearance: none; appearance: none; background-image: url('data:image/svg+xml;charset=UTF-8,%3Csvg%20xmlns%3D%22http%3E//www.w3.org/2000/svg%22%20width%3D%2224%22%20height%3D%2224%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22%239ca3af%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpolyline%20points%3D%226%209%2012%2015%2018%209%22%3E%3C/polyline%3E%3C/svg%3E'); background-repeat: no-repeat; background-position: right 16px center; background-size: 16px;">
+              <option value="1">1. 作成前の準備段階</option>
+              <option value="2">2. 実際にシフトを入れて記入</option>
+              <option value="3">3. PCのシステムに入力して上に報告</option>
+              <option value="4">4. 確認後認証が出たら修正して仕上げ</option>
+              <option value="5">5. 最後の仕上げと次の準備</option>
+            </select>
+            <div style="display: flex; gap: 8px; width: 100%;">
+              <input type="text" id="newTaskInput" placeholder="例: 各自の要望を再確認する" required autocomplete="off">
+              <button type="submit" class="btn-primary" style="padding: 0 20px; white-space: nowrap;" id="addTaskBtn">追加</button>
+            </div>
           </div>
         </form>
       </section>

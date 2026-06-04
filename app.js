@@ -5,16 +5,31 @@ let state = {
   currentView: 'top' // 'top' または 'details'
 };
 
-// デフォルトの作業工程テンプレート
+// カテゴリ定義
+const CATEGORIES = [
+  { id: 1, name: "1. 作成前の準備段階" },
+  { id: 2, name: "2. 実際にシフトを入れて記入" },
+  { id: 3, name: "3. PCのシステムに入力して上に報告" },
+  { id: 4, name: "4. 確認後認証が出たら修正して仕上げ" },
+  { id: 5, name: "5. 最後の仕上げと次の準備" }
+];
+
+// 初期設定のチェック項目テンプレート
 const DEFAULT_TASKS_TEMPLATE = [
-  "朝礼・体調確認・KY活動（危険予知）",
-  "機材・車両の始業前点検",
-  "午前の作業開始",
-  "中間進捗確認と水分補給（休憩）",
-  "昼休憩・健康状態チェック",
-  "午後の作業開始",
-  "片付け・資材整理・清掃",
-  "終礼・本日の日報作成と提出"
+  { categoryId: 1, text: "各スタッフの希望休・休暇申請の回収と確認" },
+  { categoryId: 1, text: "必要人数（人員基準・稼働目標）の確認" },
+  { categoryId: 1, text: "特別なイベントや繁忙期のスケジュールの確認" },
+  { categoryId: 2, text: "公休数・連続勤務日数の上限チェック" },
+  { categoryId: 2, text: "各時間帯・曜日の必要人員（スキルバランスなど）の確認" },
+  { categoryId: 2, text: "夜勤明けの翌日シフト（連休ルール等）のチェック" },
+  { categoryId: 3, text: "社内システム（PC）へのデータ入力" },
+  { categoryId: 3, text: "入力ミス・転記ミスの最終ダブルチェック" },
+  { categoryId: 3, text: "上司または管理部門への報告・承認申請の送信" },
+  { categoryId: 4, text: "指摘事項や修正依頼の有無を確認" },
+  { categoryId: 4, text: "必要に応じてシフトの微調整と修正箇所の再確認" },
+  { categoryId: 4, text: "最終承認（認証）の獲得" },
+  { categoryId: 5, text: "確定した勤務指定表の印刷・配布・共有（スタッフ周知）" },
+  { categoryId: 5, text: "次の4週間（28日分）のスケジュール確認と、希望休提出締切のアナウンス" }
 ];
 
 // 初期化処理
@@ -24,11 +39,37 @@ document.addEventListener('DOMContentLoaded', () => {
   render();
   setupEventListeners();
   
-  // 今日の日付を新規登録のデフォルト値に設定
-  const today = new Date().toISOString().split('T')[0];
-  document.getElementById('startDate').value = today;
-  document.getElementById('endDate').value = today;
+  // 開始日のデフォルト設定と終了日の自動計算（28日分）
+  initDateInputs();
 });
+
+// 開始日・終了日の初期設定
+function initDateInputs() {
+  const startDateInput = document.getElementById('startDate');
+  const endDateInput = document.getElementById('endDate');
+  
+  const today = new Date();
+  const todayStr = today.toISOString().split('T')[0];
+  
+  startDateInput.value = todayStr;
+  calculateAndSetEndDate(todayStr);
+
+  // 開始日が変更されたら、自動で28日分（27日後）の終了日をセットする
+  startDateInput.addEventListener('change', (e) => {
+    calculateAndSetEndDate(e.target.value);
+  });
+}
+
+// 終了日の自動計算 (開始日を含めて28日間 ＝ 開始日から27日後)
+function calculateAndSetEndDate(startDateVal) {
+  if (!startDateVal) return;
+  const startDate = new Date(startDateVal);
+  const endDate = new Date(startDate);
+  endDate.setDate(startDate.getDate() + 27); // 27日を足すことで開始日含めて28日になる
+  
+  const endDateInput = document.getElementById('endDate');
+  endDateInput.value = endDate.toISOString().split('T')[0];
+}
 
 // データの読み込み
 function loadData() {
@@ -41,23 +82,25 @@ function loadData() {
       state.periods = [];
     }
   } else {
-    // 初回起動時のサンプルデータ
+    // 初回起動時のサンプルデータ作成
     const today = new Date();
-    const futureDate = new Date();
-    futureDate.setDate(today.getDate() + 6);
+    const todayStr = today.toISOString().split('T')[0];
     
-    const formattedToday = today.toISOString().split('T')[0];
-    const formattedFuture = futureDate.toISOString().split('T')[0];
+    // サンプルの終了日（27日後）
+    const end = new Date(today);
+    end.setDate(today.getDate() + 27);
+    const endStr = end.toISOString().split('T')[0];
     
     state.periods = [
       {
         id: Date.now(),
-        startDate: formattedToday,
-        endDate: formattedFuture,
-        tasks: DEFAULT_TASKS_TEMPLATE.map((text, idx) => ({
+        startDate: todayStr,
+        endDate: endStr,
+        tasks: DEFAULT_TASKS_TEMPLATE.map((t, idx) => ({
           id: Date.now() + idx,
-          text: text,
-          checked: idx < 2 // 最初の2つを完了済みにしておく
+          categoryId: t.categoryId,
+          text: t.text,
+          checked: t.categoryId === 1 && idx === 0 // 最初の項目だけ完了にしておく
         }))
       }
     ];
@@ -113,14 +156,14 @@ function renderTopView() {
     card.className = 'period-card';
     card.innerHTML = `
       <div class="period-card-header">
-        <div class="period-title">📅 ${formattedStart} 〜 ${formattedEnd}</div>
+        <div class="period-title">📅 ${formattedStart} 〜 ${formattedEnd} (28日間)</div>
         <div class="period-stats">${completedTasks}/${totalTasks} 完了</div>
       </div>
       <div class="progress-container">
         <div class="progress-bar" style="width: ${progressPercent}%"></div>
       </div>
       <div class="card-footer">
-        <span class="card-hint">👉 タップしてチェック項目を確認</span>
+        <span class="card-hint">👉 タップして作成工程を確認</span>
         <button class="btn-danger-icon delete-period-btn" data-id="${period.id}" title="期間を削除">
           🗑️
         </button>
@@ -129,7 +172,6 @@ function renderTopView() {
 
     // カード本体をタップしたら詳細へ
     card.addEventListener('click', (e) => {
-      // 削除ボタンをクリックした場合は遷移しない
       if (e.target.closest('.delete-period-btn')) {
         return;
       }
@@ -139,7 +181,7 @@ function renderTopView() {
     // 削除ボタンのイベント
     card.querySelector('.delete-period-btn').addEventListener('click', (e) => {
       e.stopPropagation();
-      if (confirm(`この期間（${formattedStart} 〜 ${formattedEnd}）とすべてのチェック項目を削除しますか？`)) {
+      if (confirm(`この期間（${formattedStart} 〜 ${formattedEnd}）の作成工程データをすべて削除しますか？`)) {
         deletePeriod(period.id);
       }
     });
@@ -148,7 +190,7 @@ function renderTopView() {
   });
 }
 
-// 詳細画面（チェックリスト）のレンダリング
+// 詳細画面（グループ化されたチェックリスト）のレンダリング
 function renderDetailsView() {
   const period = state.periods.find(p => p.id === state.activePeriodId);
   if (!period) {
@@ -160,47 +202,58 @@ function renderDetailsView() {
   const formattedEnd = formatDateJapanese(period.endDate);
   
   // タイトル設定
-  document.getElementById('detailsTitle').innerText = `${formattedStart} 〜 ${formattedEnd}`;
+  document.getElementById('detailsTitle').innerText = `${formattedStart} 〜 ${formattedEnd} 勤務指定表作成`;
 
   const checklistContainer = document.getElementById('checklist');
   checklistContainer.innerHTML = '';
 
-  if (period.tasks.length === 0) {
-    checklistContainer.innerHTML = `
-      <div class="empty-state">
-        <div class="empty-icon">📝</div>
-        <p>工程項目がありません。<br>下のフォームから新しく追加してください。</p>
-      </div>
-    `;
-    return;
-  }
+  // カテゴリごとにタスクをグループ分けして描画
+  CATEGORIES.forEach(category => {
+    const categoryTasks = period.tasks.filter(t => t.categoryId === category.id);
+    
+    // グループヘッダーの作成
+    const groupHeader = document.createElement('div');
+    groupHeader.className = 'category-group-header';
+    groupHeader.innerText = category.name;
+    checklistContainer.appendChild(groupHeader);
 
-  period.tasks.forEach(task => {
-    const item = document.createElement('div');
-    item.className = `checklist-item ${task.checked ? 'checked' : ''}`;
-    item.innerHTML = `
-      <div class="checklist-item-left">
-        <div class="custom-checkbox">
-          <i>✓</i>
+    // そのカテゴリにタスクがない場合の表示
+    if (categoryTasks.length === 0) {
+      const emptyMsg = document.createElement('div');
+      emptyMsg.className = 'category-empty-msg';
+      emptyMsg.innerText = 'この工程のチェック項目はありません。';
+      checklistContainer.appendChild(emptyMsg);
+      return;
+    }
+
+    // タスクの描画
+    categoryTasks.forEach(task => {
+      const item = document.createElement('div');
+      item.className = `checklist-item ${task.checked ? 'checked' : ''}`;
+      item.innerHTML = `
+        <div class="checklist-item-left">
+          <div class="custom-checkbox">
+            <i>✓</i>
+          </div>
+          <span class="task-text">${escapeHtml(task.text)}</span>
         </div>
-        <span class="task-text">${escapeHtml(task.text)}</span>
-      </div>
-      <button class="btn-danger-icon delete-task-btn" data-id="${task.id}" title="項目を削除">
-        ✕
-      </button>
-    `;
+        <button class="btn-danger-icon delete-task-btn" data-id="${task.id}" title="項目を削除">
+          ✕
+        </button>
+      `;
 
-    // チェック切り替えイベント
-    item.querySelector('.checklist-item-left').addEventListener('click', () => {
-      toggleTask(period.id, task.id);
+      // チェック切り替えイベント
+      item.querySelector('.checklist-item-left').addEventListener('click', () => {
+        toggleTask(period.id, task.id);
+      });
+
+      // 項目削除イベント
+      item.querySelector('.delete-task-btn').addEventListener('click', () => {
+        deleteTask(period.id, task.id);
+      });
+
+      checklistContainer.appendChild(item);
     });
-
-    // 項目削除イベント
-    item.querySelector('.delete-task-btn').addEventListener('click', () => {
-      deleteTask(period.id, task.id);
-    });
-
-    checklistContainer.appendChild(item);
   });
 }
 
@@ -245,19 +298,15 @@ function addPeriod(startDate, endDate) {
     return;
   }
 
-  if (new Date(startDate) > new Date(endDate)) {
-    showToast('終了日は開始日より後の日付にしてください。');
-    return;
-  }
-
-  // デフォルトタスクのコピーを含めて新規期間オブジェクトを作成
+  // テンプレートタスクをコピーして新規期間を追加
   const newPeriod = {
     id: Date.now(),
     startDate: startDate,
     endDate: endDate,
-    tasks: DEFAULT_TASKS_TEMPLATE.map((text, idx) => ({
+    tasks: DEFAULT_TASKS_TEMPLATE.map((t, idx) => ({
       id: Date.now() + idx + 100,
-      text: text,
+      categoryId: t.categoryId,
+      text: t.text,
       checked: false
     }))
   };
@@ -265,7 +314,7 @@ function addPeriod(startDate, endDate) {
   state.periods.push(newPeriod);
   saveData();
   render();
-  showToast('新しい期間を追加しました！');
+  showToast('4週間の勤務期間を追加しました！');
 }
 
 // 期間の削除
@@ -290,7 +339,7 @@ function toggleTask(periodId, taskId) {
 }
 
 // タスクの追加
-function addTask(periodId, text) {
+function addTask(periodId, text, categoryId) {
   if (!text.trim()) {
     showToast('作業項目を入力してください。');
     return;
@@ -300,6 +349,7 @@ function addTask(periodId, text) {
   if (period) {
     const newTask = {
       id: Date.now(),
+      categoryId: parseInt(categoryId, 10),
       text: text.trim(),
       checked: false
     };
@@ -348,7 +398,8 @@ function setupEventListeners() {
   document.getElementById('addTaskForm').addEventListener('submit', (e) => {
     e.preventDefault();
     const taskInput = document.getElementById('newTaskInput');
-    addTask(state.activePeriodId, taskInput.value);
+    const categorySelect = document.getElementById('taskCategorySelect');
+    addTask(state.activePeriodId, taskInput.value, categorySelect.value);
     taskInput.value = '';
   });
 
