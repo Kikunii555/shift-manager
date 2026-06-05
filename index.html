@@ -42,15 +42,47 @@
             <label>📅 新しい勤務期間を登録する (4週間/28日分)</label>
             <div class="form-row">
               <div>
-                <label for="startDate" style="font-size:0.75rem;">開始日</label>
+                <label for="startDate" style="font-size:0.75rem;">開始日 <span id="startDateDay" style="color: #a5b4fc; font-weight: bold;"></span></label>
                 <input type="date" id="startDate" required>
               </div>
               <div>
-                <label for="endDate" style="font-size:0.75rem;">終了日 (自動計算)</label>
+                <label for="endDate" style="font-size:0.75rem;">終了日 (自動計算) <span id="endDateDay" style="color: #a5b4fc; font-weight: bold;"></span></label>
                 <input type="date" id="endDate" required readonly
                   style="opacity: 0.8; cursor: not-allowed; background-color: rgba(255,255,255,0.02);">
               </div>
             </div>
+            <!-- 後で登録データとして使用するため、非表示で保持します -->
+            <input type="hidden" id="saveDeadline">
+            <input type="hidden" id="confirmDeadline">
+
+            <div class="form-row" style="margin-top: 10px;">
+              <div>
+                <label for="meetingDate" style="font-size:0.75rem;">経推・会議日 <span id="meetingDateDay" style="color: #a5b4fc; font-weight: bold;"></span></label>
+                <input type="date" id="meetingDate">
+              </div>
+              <div>
+                <label for="prDate" style="font-size:0.75rem;">広報 (日付選択) <span id="prDateDay" style="color: #a5b4fc; font-weight: bold;"></span></label>
+                <input type="date" id="prDate">
+              </div>
+            </div>
+
+            <!-- 祝日管理セクション -->
+            <div style="margin-top: 14px; padding: 12px; background: rgba(255,255,255,0.02); border: 1px solid var(--border-color); border-radius: var(--border-radius);">
+              <label style="font-size:0.8rem; font-weight:600; display:block; margin-bottom: 8px;">🇯🇵 この期間の祝日・イベント</label>
+              
+              <!-- 自動取得・手動追加された祝日リスト -->
+              <div id="formHolidaysContainer" style="display:flex; flex-wrap:wrap; gap:8px; margin-bottom:10px;">
+                <!-- JSで動的にバッジが追加されます -->
+              </div>
+              
+              <!-- 祝日の手動追加フォーム -->
+              <div style="display:flex; gap:6px;">
+                <input type="date" id="newHolidayDate" style="padding: 8px 10px; font-size: 0.85rem; flex: 1.2;">
+                <input type="text" id="newHolidayName" placeholder="祝日・イベント名" style="padding: 8px 10px; font-size: 0.85rem; flex: 1.8;">
+                <button type="button" id="addHolidayFormBtn" class="btn-primary" style="padding: 0 12px; font-size: 0.85rem; border-radius: 8px; box-shadow: none;">追加</button>
+              </div>
+            </div>
+
           </div>
           <button type="submit" class="btn-primary" style="width: 100%; margin-top: 12px;" id="addPeriodBtn">
             ➕ この期間を登録する
@@ -79,6 +111,20 @@
           <div id="detailsTitle" style="font-size: 1.15rem; font-weight: 700; color: var(--text-primary);"></div>
         </div>
       </div>
+
+      <!-- 祝日・イベントセクション -->
+      <section id="detailsHolidaysSection" class="holidays-section" style="padding: 14px 16px; background: rgba(255,255,255,0.02); border: 1px solid var(--border-color); border-radius: var(--border-radius); display: flex; flex-direction: column; gap: 10px;">
+        <h3 style="font-size: 0.85rem; color: var(--text-secondary); font-weight: 600;">🇯🇵 祝日・イベント</h3>
+        <div id="detailsHolidaysList" style="display: flex; flex-wrap: wrap; gap: 8px;">
+          <!-- 祝日バッジが動的に追加されます -->
+        </div>
+        <!-- 祝日の追加用UI -->
+        <div style="display: flex; gap: 6px; margin-top: 4px;">
+          <input type="date" id="detailNewHolidayDate" style="padding: 8px 10px; font-size: 0.85rem; flex: 1.2; border: 1px solid var(--border-color); border-radius: 8px; background-color: var(--card-bg); color: var(--text-primary); font-family: var(--font-family);">
+          <input type="text" id="detailNewHolidayName" placeholder="祝日・イベント名" style="padding: 8px 10px; font-size: 0.85rem; flex: 1.8; border: 1px solid var(--border-color); border-radius: 8px; background-color: var(--card-bg); color: var(--text-primary); font-family: var(--font-family);">
+          <button type="button" id="detailAddHolidayBtn" class="btn-primary" style="padding: 0 12px; font-size: 0.85rem; border-radius: 8px; box-shadow: none;">追加</button>
+        </div>
+      </section>
 
       <!-- 工程チェックリスト -->
       <section class="checklist-section">
