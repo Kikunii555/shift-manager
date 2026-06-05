@@ -737,14 +737,6 @@ function setupEventListeners() {
   // 詳細画面から戻るボタン
   document.getElementById('backBtn').addEventListener('click', navigateToTop);
 
-  // 日付入力時の曜日ラベル動的更新イベント
-  document.getElementById('meetingDate').addEventListener('change', () => {
-    updateDayLabel('meetingDate', 'meetingDateDay');
-  });
-  document.getElementById('prDate').addEventListener('change', () => {
-    updateDayLabel('prDate', 'prDateDay');
-  });
-
   // 新規タスク追加フォーム
   document.getElementById('addTaskForm').addEventListener('submit', (e) => {
     e.preventDefault();
