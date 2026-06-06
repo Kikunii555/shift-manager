@@ -18,7 +18,7 @@
   <link rel="manifest" href="./manifest.json">
 
   <!-- CSS Stylesheet -->
-  <link rel="stylesheet" href="./style.css?v=19">
+  <link rel="stylesheet" href="./style.css?v=21">
 </head>
 
 <body>
@@ -73,7 +73,7 @@
             <!-- 詳細設定用アコーディオン -->
             <div class="accordion-container" id="formAccordion" style="margin-top: 14px;">
               <button type="button" class="accordion-trigger" id="accordionTrigger">
-                <span>⚙️ 会議日・広報・祝日の詳細設定</span>
+                <span>⚙️ 会議日・広報・減区・イベントの詳細設定</span>
                 <span class="accordion-icon">▼</span>
               </button>
               <div class="accordion-content" id="accordionContent">
@@ -125,7 +125,7 @@
 
                 <!-- 祝日管理セクション -->
                 <div style="margin-top: 14px; padding: 12px; background: rgba(255,255,255,0.02); border: 1px solid var(--border-color); border-radius: var(--border-radius);">
-                  <label style="font-size:0.8rem; font-weight:600; display:block; margin-bottom: 8px;">🇯🇵 この期間の祝日・イベント</label>
+                  <label style="font-size:0.8rem; font-weight:600; display:block; margin-bottom: 8px;">🇯🇵 この期間の減区・イベント</label>
                   
                   <!-- 自動取得・手動追加された祝日リスト -->
                   <div id="formHolidaysContainer" style="display:flex; flex-wrap:wrap; gap:8px; margin-bottom:10px;">
@@ -135,7 +135,7 @@
                   <!-- 祝日の手動追加フォーム -->
                   <div style="display:flex; gap:6px;">
                     <input type="date" id="newHolidayDate" style="padding: 8px 10px; font-size: 0.85rem; flex: 1.2;">
-                    <input type="text" id="newHolidayName" placeholder="祝日・イベント名" style="padding: 8px 10px; font-size: 0.85rem; flex: 1.8;">
+                    <input type="text" id="newHolidayName" placeholder="減区・イベント名" style="padding: 8px 10px; font-size: 0.85rem; flex: 1.8;">
                     <button type="button" id="addHolidayFormBtn" class="btn-primary" style="padding: 0 12px; font-size: 0.85rem; border-radius: 8px; box-shadow: none;">追加</button>
                   </div>
                 </div>
@@ -186,7 +186,7 @@
 
       <!-- 祝日・イベントセクション -->
       <section id="detailsHolidaysSection" class="holidays-section" style="padding: 14px 16px; background: rgba(255,255,255,0.02); border: 1px solid var(--border-color); border-radius: var(--border-radius); display: flex; flex-direction: column; gap: 10px;">
-        <h3 style="font-size: 0.85rem; color: var(--text-secondary); font-weight: 600;">🇯🇵 祝日・イベント</h3>
+        <h3 style="font-size: 0.85rem; color: var(--text-secondary); font-weight: 600;">🇯🇵 減区・イベント</h3>
         <div id="detailsHolidaysList" style="display: flex; flex-wrap: wrap; gap: 8px;">
           <!-- 祝日バッジが動的に追加されます -->
         </div>
@@ -262,7 +262,7 @@
   </div>
 
   <!-- JS スクリプト -->
-  <script src="./app.js?v=19"></script>
+  <script src="./app.js?v=21"></script>
 </body>
 
 </html>

@@ -285,17 +285,27 @@ function syncMeetingAndPrEvents() {
     container.innerHTML = '';
 
     if (formHolidays.length === 0) {
-      container.innerHTML = '<span style="font-size:0.8rem; color:var(--text-secondary);">祝日・イベントはありません</span>';
+      container.innerHTML = '<span style="font-size:0.8rem; color:var(--text-secondary);">減区・イベントはありません</span>';
       return;
     }
 
     const startDateVal = document.getElementById('startDate').value;
 
     formHolidays.forEach((h, index) => {
-      const isCustom = h.name === "振替休日" || h.name === "国民の休日" ? false : !["元日", "成人の日", "建国記念の日", "天皇誕生日", "春分の日", "昭和の日", "憲法記念日", "みどりの日", "こどもの日", "海の日", "山の日", "敬老の日", "秋分の日", "スポーツの日", "文化の日", "勤労感謝の日"].includes(h.name);
+      let badgeClass = 'holiday-badge';
+      if (h.name.startsWith("【会議】")) {
+        badgeClass += ' event-meeting-badge';
+      } else if (h.name.startsWith("【広報】")) {
+        badgeClass += ' event-pr-badge';
+      } else {
+        const isCustom = h.name === "振替休日" || h.name === "国民の休日" ? false : !["元日", "成人の日", "建国記念の日", "天皇誕生日", "春分の日", "昭和の日", "憲法記念日", "みどりの日", "こどもの日", "海の日", "山の日", "敬老の日", "秋分の日", "スポーツの日", "文化の日", "勤労感謝の日"].includes(h.name);
+        if (isCustom) {
+          badgeClass += ' custom-event';
+        }
+      }
 
       const badge = document.createElement('div');
-      badge.className = `holiday-badge ${isCustom ? 'custom-event' : ''}`;
+      badge.className = badgeClass;
 
       const d = parseDateLocal(h.date);
       if (!d) return;
@@ -633,7 +643,14 @@ function renderTopView() {
           const hWeek = getWeekMarker(h.date, period.startDate);
           const d = new Date(h.date);
           const label = `${d.getMonth() + 1}/${d.getDate()}${escapeHtml(h.name)}${hWeek}`;
-          return `<span class="holiday-mini-tag" title="${h.date}">${label}</span>`;
+          const isCustom = h.name === "振替休日" || h.name === "国民の休日" ? false : !["元日", "成人の日", "建国記念の日", "天皇誕生日", "春分の日", "昭和の日", "憲法記念日", "みどりの日", "こどもの日", "海の日", "山の日", "敬老の日", "秋分の日", "スポーツの日", "文化の日", "勤労感謝の日"].includes(h.name);
+          let miniTagClass = 'holiday-mini-tag';
+          if (h.name.startsWith("【会議】") || h.name.startsWith("【広報】")) {
+            miniTagClass += ' meeting-pr-mini';
+          } else if (isCustom) {
+            miniTagClass += ' custom-event';
+          }
+          return `<span class="${miniTagClass}" title="${h.date}">${label}</span>`;
         }).join('')}
           ${period.holidays.length > 5 ? `<span class="holiday-mini-tag" style="background:rgba(255,255,255,0.05); border-color:var(--border-color); color:var(--text-secondary);">他 ${period.holidays.length - 5}件</span>` : ''}
         </div>
@@ -752,12 +769,22 @@ function renderTopView() {
     if (detailsHolidaysList) {
       detailsHolidaysList.innerHTML = '';
       if (!period.holidays || period.holidays.length === 0) {
-        detailsHolidaysList.innerHTML = '<span style="font-size:0.85rem; color:var(--text-secondary);">祝日・イベントはありません。</span>';
+        detailsHolidaysList.innerHTML = '<span style="font-size:0.85rem; color:var(--text-secondary);">減区・イベントはありません。</span>';
       } else {
         period.holidays.forEach((h, idx) => {
-          const isCustom = h.name === "振替休日" || h.name === "国民の休日" ? false : !["元日", "成人の日", "建国記念の日", "天皇誕生日", "春分の日", "昭和の日", "憲法記念日", "みどりの日", "こどもの日", "海の日", "山の日", "敬老の日", "秋分の日", "スポーツの日", "文化の日", "勤労感謝の日"].includes(h.name);
+          let badgeClass = 'holiday-badge';
+          if (h.name.startsWith("【会議】")) {
+            badgeClass += ' event-meeting-badge';
+          } else if (h.name.startsWith("【広報】")) {
+            badgeClass += ' event-pr-badge';
+          } else {
+            const isCustom = h.name === "振替休日" || h.name === "国民の休日" ? false : !["元日", "成人の日", "建国記念の日", "天皇誕生日", "春分の日", "昭和の日", "憲法記念日", "みどりの日", "こどもの日", "海の日", "山の日", "敬老の日", "秋分の日", "スポーツの日", "文化の日", "勤労感謝の日"].includes(h.name);
+            if (isCustom) {
+              badgeClass += ' custom-event';
+            }
+          }
           const badge = document.createElement('div');
-          badge.className = `holiday-badge ${isCustom ? 'custom-event' : ''}`;
+          badge.className = badgeClass;
 
           const d = new Date(h.date);
           const dateStr = `${d.getMonth() + 1}/${d.getDate()}`;
@@ -1097,9 +1124,10 @@ function renderTopView() {
   }
 
   // 祝日の追加（特定の期間データに対して）
+  // 祝日の追加
   function addHoliday(periodId, date, name) {
     if (!date || !name.trim()) {
-      showToast('日付と祝日・イベント名を入力してください。');
+      showToast('日付と減区・イベント名を入力してください。');
       return;
     }
 
@@ -1114,7 +1142,7 @@ function renderTopView() {
       period.holidays.sort((a, b) => parseDateLocal(a.date) - parseDateLocal(b.date));
       saveData();
       render();
-      showToast('祝日・イベントを追加しました！');
+      showToast('減区・イベントを追加しました！');
     }
   }
 
@@ -1125,7 +1153,7 @@ function renderTopView() {
       period.holidays.splice(holidayIndex, 1);
       saveData();
       render();
-      showToast('祝日・イベントを削除しました。');
+      showToast('減区・イベントを削除しました。');
     }
   }
 
@@ -1257,13 +1285,14 @@ function renderTopView() {
         const nameVal = holidayNameInput.value;
 
         if (!dateVal || !nameVal.trim()) {
-          showToast('日付と祝日・イベント名を入力してください。');
+          showToast('日付と減区・イベント名を入力してください。');
           return;
         }
 
         formHolidays.push({ date: dateVal, name: nameVal.trim() });
         formHolidays.sort((a, b) => parseDateLocal(a.date) - parseDateLocal(b.date));
         renderFormHolidays();
+        renderFormCalendar();
 
         holidayDateInput.value = '';
         holidayNameInput.value = '';
@@ -1280,7 +1309,7 @@ function renderTopView() {
         const nameVal = holidayNameInput.value;
 
         if (!dateVal || !nameVal.trim()) {
-          showToast('日付と祝日・イベント名を入力してください。');
+          showToast('日付と減区・イベント名を入力してください。');
           return;
         }
 
