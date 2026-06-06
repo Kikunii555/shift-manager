@@ -477,6 +477,20 @@ function syncMeetingAndPrEvents() {
               if (!task.subtasks) {
                 task.subtasks = [];
               }
+              if (task.checked === undefined) task.checked = false;
+              if (task.checked && !task.checkedAt) {
+                task.checkedAt = null;
+              } else if (!task.checked) {
+                task.checkedAt = null;
+              }
+              task.subtasks.forEach(st => {
+                if (st.checked === undefined) st.checked = false;
+                if (st.checked && !st.checkedAt) {
+                  st.checkedAt = null;
+                } else if (!st.checked) {
+                  st.checkedAt = null;
+                }
+              });
             });
           }
         });
@@ -520,10 +534,12 @@ function syncMeetingAndPrEvents() {
             categoryId: t.categoryId,
             text: t.text,
             checked: false,
+            checkedAt: null,
             subtasks: t.subtasks ? t.subtasks.map((st, sIdx) => ({
               id: Date.now() + idx + 1000 + sIdx,
               text: st.text,
-              checked: false
+              checked: false,
+              checkedAt: null
             })) : []
           }))
         }
@@ -799,6 +815,15 @@ function renderTopView() {
           `;
         }
 
+        let checkedAtHtml = '';
+        if (task.checked && task.checkedAt) {
+          checkedAtHtml = `
+            <span class="checked-at-text" style="font-size: 0.75rem; color: var(--text-secondary); margin-left: auto; padding-right: 8px; font-weight: 500;">
+              ✓ ${formatCheckedAt(task.checkedAt)}
+            </span>
+          `;
+        }
+
         mainRow.innerHTML = `
           <div class="checklist-item-left" style="flex: 1; display: flex; align-items: center;">
             <div class="custom-checkbox">
@@ -807,9 +832,7 @@ function renderTopView() {
             <span class="task-text">${escapeHtml(task.text)}</span>
             ${subtasksBadgeHtml}
           </div>
-          <button class="btn-danger-icon delete-task-btn" data-id="${task.id}" title="項目を削除">
-            ✕
-          </button>
+          ${checkedAtHtml}
         `;
 
         // 親タスククリックイベント
@@ -818,10 +841,6 @@ function renderTopView() {
             return;
           }
           toggleTask(period.id, task.id);
-        });
-
-        mainRow.querySelector('.delete-task-btn').addEventListener('click', () => {
-          deleteTask(period.id, task.id);
         });
 
         item.appendChild(mainRow);
@@ -839,6 +858,15 @@ function renderTopView() {
             subitem.style.borderRadius = '12px';
             subitem.style.fontSize = '0.9rem';
             
+            let subCheckedAtHtml = '';
+            if (st.checked && st.checkedAt) {
+              subCheckedAtHtml = `
+                <span class="checked-at-text" style="font-size: 0.7rem; color: var(--text-secondary); margin-left: auto; padding-right: 4px; font-weight: 500;">
+                  ✓ ${formatCheckedAt(st.checkedAt)}
+                </span>
+              `;
+            }
+
             subitem.innerHTML = `
               <div class="checklist-item-left" style="flex: 1; display: flex; align-items: center; gap: 10px;">
                 <div class="custom-checkbox" style="width: 20px; height: 20px; border-radius: 6px;">
@@ -846,6 +874,7 @@ function renderTopView() {
                 </div>
                 <span class="task-text" style="font-size: 0.9rem;">${escapeHtml(st.text)}</span>
               </div>
+              ${subCheckedAtHtml}
             `;
             
             subitem.querySelector('.checklist-item-left').addEventListener('click', () => {
@@ -871,6 +900,23 @@ function renderTopView() {
         checklistContainer.appendChild(item);
       });
     });
+  }
+
+  // 完了日時の日本語フォーマット関数
+  function formatCheckedAt(dateStringOrTimestamp) {
+    if (!dateStringOrTimestamp) return '';
+    const date = new Date(dateStringOrTimestamp);
+    if (isNaN(date.getTime())) return '';
+
+    const y = date.getFullYear();
+    const m = String(date.getMonth() + 1).padStart(2, '0');
+    const d = String(date.getDate()).padStart(2, '0');
+    const dayNames = ['日', '月', '火', '水', '木', '金', '土'];
+    const dayOf = dayNames[date.getDay()];
+    const hh = String(date.getHours()).padStart(2, '0');
+    const mm = String(date.getMinutes()).padStart(2, '0');
+
+    return `${y}/${m}/${d}(${dayOf}) ${hh}:${mm}`;
   }
 
   // 日付を「〇月〇日(曜日)」フォーマットに変換
@@ -954,10 +1000,12 @@ function renderTopView() {
         categoryId: t.categoryId,
         text: t.text,
         checked: false,
+        checkedAt: null,
         subtasks: t.subtasks ? t.subtasks.map((st, sIdx) => ({
           id: Date.now() + idx + 1000 + sIdx,
           text: st.text,
-          checked: false
+          checked: false,
+          checkedAt: null
         })) : []
       }))
     };
@@ -1020,8 +1068,12 @@ function renderTopView() {
       const task = period.tasks.find(t => t.id === taskId);
       if (task) {
         task.checked = !task.checked;
+        task.checkedAt = task.checked ? new Date().toISOString() : null;
         if (task.subtasks && task.subtasks.length > 0) {
-          task.subtasks.forEach(st => st.checked = task.checked);
+          task.subtasks.forEach(st => {
+            st.checked = task.checked;
+            st.checkedAt = st.checked ? new Date().toISOString() : null;
+          });
         }
         saveData();
         render();
@@ -1038,8 +1090,17 @@ function renderTopView() {
         const subtask = task.subtasks.find(st => st.id === subtaskId);
         if (subtask) {
           subtask.checked = !subtask.checked;
+          subtask.checkedAt = subtask.checked ? new Date().toISOString() : null;
+          
           const allChecked = task.subtasks.every(st => st.checked);
+          const wasChecked = task.checked;
           task.checked = allChecked;
+          if (task.checked && !wasChecked) {
+            task.checkedAt = new Date().toISOString();
+          } else if (!task.checked) {
+            task.checkedAt = null;
+          }
+          
           saveData();
           render();
         }
