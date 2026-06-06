@@ -39,16 +39,49 @@ const CATEGORIES = [
 
 // 初期設定のチェック項目テンプレート
 const DEFAULT_TASKS_TEMPLATE = [
-  { categoryId: 1, text: "小項目１" },
-  { categoryId: 1, text: "小項目２" },
-  { categoryId: 2, text: "小項目１" },
-  { categoryId: 2, text: "小項目２" },
-  { categoryId: 3, text: "小項目１" },
-  { categoryId: 3, text: "小項目２" },
-  { categoryId: 4, text: "小項目１" },
-  { categoryId: 4, text: "小項目２" },
-  { categoryId: 5, text: "小項目１" },
-  { categoryId: 5, text: "小項目２" }
+  { 
+    categoryId: 1, 
+    text: "小項目１",
+    subtasks: [
+      { text: "小タスク１" },
+      { text: "小タスク２" }
+    ]
+  },
+  { categoryId: 1, text: "小項目２", subtasks: [] },
+  { 
+    categoryId: 2, 
+    text: "小項目１",
+    subtasks: [
+      { text: "小タスク１" },
+      { text: "小タスク２" }
+    ]
+  },
+  { categoryId: 2, text: "小項目２", subtasks: [] },
+  { 
+    categoryId: 3, 
+    text: "小項目１",
+    subtasks: [
+      { text: "小タスク１" }
+    ]
+  },
+  { categoryId: 3, text: "小項目２", subtasks: [] },
+  { 
+    categoryId: 4, 
+    text: "小項目１",
+    subtasks: [
+      { text: "小タスク１" },
+      { text: "小タスク２" }
+    ]
+  },
+  { categoryId: 4, text: "小項目２", subtasks: [] },
+  { 
+    categoryId: 5, 
+    text: "小項目１",
+    subtasks: [
+      { text: "小タスク１" }
+    ]
+  },
+  { categoryId: 5, text: "小項目２", subtasks: [] }
 ];
 
 // 初期化処理
@@ -439,6 +472,13 @@ function syncMeetingAndPrEvents() {
           if (!period.holidays) {
             period.holidays = getJapaneseHolidays(period.startDate, period.endDate);
           }
+          if (period.tasks) {
+            period.tasks.forEach(task => {
+              if (!task.subtasks) {
+                task.subtasks = [];
+              }
+            });
+          }
         });
         saveData(); // アップグレードしたデータを保存
       } catch (e) {
@@ -479,7 +519,12 @@ function syncMeetingAndPrEvents() {
             id: Date.now() + idx,
             categoryId: t.categoryId,
             text: t.text,
-            checked: t.categoryId === 1 && idx === 0 // 最初の項目だけ完了にしておく
+            checked: false,
+            subtasks: t.subtasks ? t.subtasks.map((st, sIdx) => ({
+              id: Date.now() + idx + 1000 + sIdx,
+              text: st.text,
+              checked: false
+            })) : []
           }))
         }
       ];
@@ -635,7 +680,39 @@ function renderTopView() {
     const formattedEnd = formatDateJapanese(period.endDate);
 
     // タイトル設定
-    document.getElementById('detailsTitle').innerText = `${formattedStart} 〜 ${formattedEnd} 勤務指定表作成`;
+    document.getElementById('detailsTitle').innerText = `${formattedStart} 〜 ${formattedEnd} 指定表作成`;
+
+    // 全体の進捗数と進捗率、および進行位置の表示更新
+    const totalTasks = period.tasks.length;
+    const completedTasks = period.tasks.filter(t => t.checked).length;
+    const progressPercent = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
+
+    document.getElementById('detailsProgressCount').innerText = `${completedTasks}/${totalTasks}`;
+    document.getElementById('detailsProgressPercent').innerText = `${progressPercent}%`;
+    document.getElementById('detailsProgressBar').style.width = `${progressPercent}%`;
+
+    let currentStatusText = "進捗状況: 未着手";
+    if (completedTasks === totalTasks && totalTasks > 0) {
+      currentStatusText = "進捗状況: すべての工程が完了しました！🎉";
+    } else if (completedTasks > 0) {
+      let lastCheckedTask = null;
+      let lastCheckedCategoryNum = 0;
+      
+      CATEGORIES.forEach(cat => {
+        const catTasks = period.tasks.filter(t => t.categoryId === cat.id);
+        catTasks.forEach(task => {
+          if (task.checked) {
+            lastCheckedTask = task;
+            lastCheckedCategoryNum = cat.id;
+          }
+        });
+      });
+
+      if (lastCheckedTask) {
+        currentStatusText = `現在の進捗: 大項目${lastCheckedCategoryNum}の「${escapeHtml(lastCheckedTask.text)}」まで完了`;
+      }
+    }
+    document.getElementById('detailsCurrentStatus').innerText = currentStatusText;
 
     // 祝日・イベント一覧の描画
     const detailsHolidaysList = document.getElementById('detailsHolidaysList');
@@ -654,14 +731,8 @@ function renderTopView() {
           const hWeek = getWeekMarker(h.date, period.startDate);
 
           badge.innerHTML = `
-          <span>${dateStr} ${escapeHtml(h.name)}${hWeek}</span>
-          <button type="button" class="holiday-badge-delete" title="削除">✕</button>
-        `;
-
-          badge.querySelector('.holiday-badge-delete').addEventListener('click', (e) => {
-            e.stopPropagation();
-            deleteHoliday(period.id, idx);
-          });
+            <span>${dateStr} ${escapeHtml(h.name)}${hWeek}</span>
+          `;
 
           detailsHolidaysList.appendChild(badge);
         });
@@ -678,7 +749,19 @@ function renderTopView() {
       // グループヘッダーの作成
       const groupHeader = document.createElement('div');
       groupHeader.className = 'category-group-header';
-      groupHeader.innerText = category.name;
+      groupHeader.style.display = 'flex';
+      groupHeader.style.justifyContent = 'space-between';
+      groupHeader.style.alignItems = 'center';
+
+      const completedCatTasks = categoryTasks.filter(t => t.checked).length;
+      const totalCatTasks = categoryTasks.length;
+
+      groupHeader.innerHTML = `
+        <span>${escapeHtml(category.name)}</span>
+        <span style="font-size: 0.8rem; font-weight: 600; opacity: 0.8; background: rgba(255,255,255,0.2); padding: 2px 8px; border-radius: 8px;">
+          ${completedCatTasks}/${totalCatTasks}
+        </span>
+      `;
       checklistContainer.appendChild(groupHeader);
 
       // そのカテゴリにタスクがない場合の表示
@@ -692,29 +775,98 @@ function renderTopView() {
 
       // タスクの描画
       categoryTasks.forEach(task => {
+        const hasSubtasks = task.subtasks && task.subtasks.length > 0;
+        
         const item = document.createElement('div');
-        item.className = `checklist-item ${task.checked ? 'checked' : ''}`;
-        item.innerHTML = `
-        <div class="checklist-item-left">
-          <div class="custom-checkbox">
-            <i>✓</i>
-          </div>
-          <span class="task-text">${escapeHtml(task.text)}</span>
-        </div>
-        <button class="btn-danger-icon delete-task-btn" data-id="${task.id}" title="項目を削除">
-          ✕
-        </button>
-      `;
+        item.className = 'checklist-item-wrapper';
+        item.style.display = 'flex';
+        item.style.flexDirection = 'column';
+        item.style.gap = '6px';
+        item.style.marginBottom = '8px';
 
-        // チェック切り替えイベント
-        item.querySelector('.checklist-item-left').addEventListener('click', () => {
+        // メインタスク行
+        const mainRow = document.createElement('div');
+        mainRow.className = `checklist-item ${task.checked ? 'checked' : ''}`;
+        
+        let subtasksBadgeHtml = '';
+        if (hasSubtasks) {
+          const completedCount = task.subtasks.filter(st => st.checked).length;
+          const totalCount = task.subtasks.length;
+          subtasksBadgeHtml = `
+            <span class="subtask-badge" style="font-size: 0.75rem; background: var(--accent-color); color: white; padding: 2px 8px; border-radius: 4px; margin-left: 8px; font-weight: 600; cursor: pointer; transition: opacity 0.2s;">
+              小タスクあり (${completedCount}/${totalCount})
+            </span>
+          `;
+        }
+
+        mainRow.innerHTML = `
+          <div class="checklist-item-left" style="flex: 1; display: flex; align-items: center;">
+            <div class="custom-checkbox">
+              <i>✓</i>
+            </div>
+            <span class="task-text">${escapeHtml(task.text)}</span>
+            ${subtasksBadgeHtml}
+          </div>
+          <button class="btn-danger-icon delete-task-btn" data-id="${task.id}" title="項目を削除">
+            ✕
+          </button>
+        `;
+
+        // 親タスククリックイベント
+        mainRow.querySelector('.checklist-item-left').addEventListener('click', (e) => {
+          if (e.target.closest('.subtask-badge')) {
+            return;
+          }
           toggleTask(period.id, task.id);
         });
 
-        // 項目削除イベント
-        item.querySelector('.delete-task-btn').addEventListener('click', () => {
+        mainRow.querySelector('.delete-task-btn').addEventListener('click', () => {
           deleteTask(period.id, task.id);
         });
+
+        item.appendChild(mainRow);
+
+        // サブタスクリストの描画
+        if (hasSubtasks) {
+          const subtaskList = document.createElement('div');
+          subtaskList.className = 'subtask-list';
+          subtaskList.style.paddingLeft = '32px';
+          
+          task.subtasks.forEach(st => {
+            const subitem = document.createElement('div');
+            subitem.className = `checklist-item sub-item ${st.checked ? 'checked' : ''}`;
+            subitem.style.padding = '8px 12px';
+            subitem.style.borderRadius = '12px';
+            subitem.style.fontSize = '0.9rem';
+            
+            subitem.innerHTML = `
+              <div class="checklist-item-left" style="flex: 1; display: flex; align-items: center; gap: 10px;">
+                <div class="custom-checkbox" style="width: 20px; height: 20px; border-radius: 6px;">
+                  <i style="font-size: 0.7rem;">✓</i>
+                </div>
+                <span class="task-text" style="font-size: 0.9rem;">${escapeHtml(st.text)}</span>
+              </div>
+            `;
+            
+            subitem.querySelector('.checklist-item-left').addEventListener('click', () => {
+              toggleSubtask(period.id, task.id, st.id);
+            });
+            
+            subtaskList.appendChild(subitem);
+          });
+          
+          item.appendChild(subtaskList);
+
+          // バッジクリックでのアコーディオン開閉
+          const badgeEl = mainRow.querySelector('.subtask-badge');
+          if (badgeEl) {
+            badgeEl.addEventListener('click', () => {
+              const isHidden = subtaskList.style.display === 'none';
+              subtaskList.style.display = isHidden ? 'flex' : 'none';
+              badgeEl.style.opacity = isHidden ? '1' : '0.6';
+            });
+          }
+        }
 
         checklistContainer.appendChild(item);
       });
@@ -801,7 +953,12 @@ function renderTopView() {
         id: Date.now() + idx + 100,
         categoryId: t.categoryId,
         text: t.text,
-        checked: false
+        checked: false,
+        subtasks: t.subtasks ? t.subtasks.map((st, sIdx) => ({
+          id: Date.now() + idx + 1000 + sIdx,
+          text: st.text,
+          checked: false
+        })) : []
       }))
     };
 
@@ -863,8 +1020,29 @@ function renderTopView() {
       const task = period.tasks.find(t => t.id === taskId);
       if (task) {
         task.checked = !task.checked;
+        if (task.subtasks && task.subtasks.length > 0) {
+          task.subtasks.forEach(st => st.checked = task.checked);
+        }
         saveData();
         render();
+      }
+    }
+  }
+
+  // サブタスクの完了トグル
+  function toggleSubtask(periodId, taskId, subtaskId) {
+    const period = state.periods.find(p => p.id === periodId);
+    if (period) {
+      const task = period.tasks.find(t => t.id === taskId);
+      if (task && task.subtasks) {
+        const subtask = task.subtasks.find(st => st.id === subtaskId);
+        if (subtask) {
+          subtask.checked = !subtask.checked;
+          const allChecked = task.subtasks.every(st => st.checked);
+          task.checked = allChecked;
+          saveData();
+          render();
+        }
       }
     }
   }

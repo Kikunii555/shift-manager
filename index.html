@@ -18,7 +18,7 @@
   <link rel="manifest" href="./manifest.json">
 
   <!-- CSS Stylesheet -->
-  <link rel="stylesheet" href="./style.css?v=12">
+  <link rel="stylesheet" href="./style.css?v=14">
 </head>
 
 <body>
@@ -165,9 +165,22 @@
         <button class="btn-icon" id="backBtn" title="戻る" aria-label="Back">
           ⬅️
         </button>
-        <div>
+        <div style="flex: 1;">
           <h2 style="font-size: 0.85rem; color: var(--text-secondary); font-weight: 500;">選択中の期間</h2>
-          <div id="detailsTitle" style="font-size: 1.15rem; font-weight: 700; color: var(--text-primary);"></div>
+          <div id="detailsTitle" style="font-size: 1.15rem; font-weight: 700; color: var(--text-primary); margin-bottom: 8px;"></div>
+          <!-- 全体の進捗数と進捗率、および進行位置の表示領域 -->
+          <div id="detailsProgressContainer" style="background: rgba(45, 74, 67, 0.04); padding: 12px; border-radius: var(--border-radius); border: 1px solid var(--border-color); font-size: 0.85rem; display: flex; flex-direction: column; gap: 6px; margin-top: 6px;">
+            <div style="display: flex; justify-content: space-between; font-weight: 600;">
+              <span>全体進捗: <span id="detailsProgressCount">0/0</span> 項目</span>
+              <span id="detailsProgressPercent" style="color: var(--accent-color);">0%</span>
+            </div>
+            <div class="progress-container" style="background-color: rgba(45, 74, 67, 0.1); height: 8px; border-radius: 4px;">
+              <div id="detailsProgressBar" class="progress-bar" style="width: 0%; height: 100%; border-radius: 4px; background: linear-gradient(90deg, var(--accent-color) 0%, var(--success-color) 100%); transition: width 0.3s ease;"></div>
+            </div>
+            <div id="detailsCurrentStatus" style="font-size: 0.8rem; color: var(--text-secondary); font-weight: 500; margin-top: 2px;">
+              進捗状況: 未着手
+            </div>
+          </div>
         </div>
       </div>
 
@@ -176,12 +189,6 @@
         <h3 style="font-size: 0.85rem; color: var(--text-secondary); font-weight: 600;">🇯🇵 祝日・イベント</h3>
         <div id="detailsHolidaysList" style="display: flex; flex-wrap: wrap; gap: 8px;">
           <!-- 祝日バッジが動的に追加されます -->
-        </div>
-        <!-- 祝日の追加用UI -->
-        <div style="display: flex; gap: 6px; margin-top: 4px;">
-          <input type="date" id="detailNewHolidayDate" style="padding: 8px 10px; font-size: 0.85rem; flex: 1.2; border: 1px solid var(--border-color); border-radius: 8px; background-color: var(--card-bg); color: var(--text-primary); font-family: var(--font-family);">
-          <input type="text" id="detailNewHolidayName" placeholder="祝日・イベント名" style="padding: 8px 10px; font-size: 0.85rem; flex: 1.8; border: 1px solid var(--border-color); border-radius: 8px; background-color: var(--card-bg); color: var(--text-primary); font-family: var(--font-family);">
-          <button type="button" id="detailAddHolidayBtn" class="btn-primary" style="padding: 0 12px; font-size: 0.85rem; border-radius: 8px; box-shadow: none;">追加</button>
         </div>
       </section>
 
@@ -255,7 +262,7 @@
   </div>
 
   <!-- JS スクリプト -->
-  <script src="./app.js?v=12"></script>
+  <script src="./app.js?v=14"></script>
 </body>
 
 </html>
