@@ -383,6 +383,13 @@ function syncMeetingAndPrEvents() {
       dayEl.className = 'calendar-day-cell in-period';
       dayEl.dataset.date = currentStr;
 
+      const currentDay = current.getDay();
+      if (currentDay === 0) {
+        dayEl.classList.add('day-sunday');
+      } else if (currentDay === 6) {
+        dayEl.classList.add('day-saturday');
+      }
+
       // 表示する日付テキスト
       // i === 0 (最初の日)、またはその月の1日には月を表示する
       const isMonthStart = current.getDate() === 1;
@@ -423,11 +430,21 @@ function syncMeetingAndPrEvents() {
       // 3. 祝日 (会議日・広報以外の純粋な祝日・イベント)
       const isHoliday = formHolidays.find(h => h.date === currentStr && !h.name.startsWith("【会議】") && !h.name.startsWith("【広報】"));
       if (isHoliday) {
-        dayEl.classList.add('event-holiday');
-        const badge = document.createElement('span');
-        badge.className = 'event-tag tag-holiday';
-        badge.innerText = isHoliday.name.slice(0, 3);
-        dayEl.appendChild(badge);
+        const isCustomHoliday = isHoliday.name === "振替休日" || isHoliday.name === "国民の休日" ? false : !["元日", "成人の日", "建国記念の日", "天皇誕生日", "春分の日", "昭和の日", "憲法記念日", "みどりの日", "こどもの日", "海の日", "山の日", "敬老の日", "秋分の日", "スポーツの日", "文化の日", "勤労感謝の日"].includes(isHoliday.name);
+        
+        if (isCustomHoliday) {
+          dayEl.classList.add('event-custom-holiday');
+          const badge = document.createElement('span');
+          badge.className = 'event-tag tag-custom-holiday';
+          badge.innerText = isHoliday.name.slice(0, 3);
+          dayEl.appendChild(badge);
+        } else {
+          dayEl.classList.add('event-holiday');
+          const badge = document.createElement('span');
+          badge.className = 'event-tag tag-holiday';
+          badge.innerText = isHoliday.name.slice(0, 3);
+          dayEl.appendChild(badge);
+        }
       }
 
       // マスをクリックした際に広報日を選択する

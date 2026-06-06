@@ -676,13 +676,43 @@ input[type="date"]:focus, input[type="text"]:focus {
 }
 
 .calendar-day-cell.event-meeting {
-  border: 1.5px dashed var(--text-primary);
+  background-color: rgba(245, 158, 11, 0.08) !important;
+  color: #b45309 !important;
+  border: 1.5px dashed #f59e0b !important;
+}
+.calendar-day-cell.event-meeting:hover {
+  background-color: rgba(245, 158, 11, 0.18) !important;
 }
 
 .calendar-day-cell.event-pr {
-  background-color: #f5e6d3 !important; /* サンドベージュ */
-  color: var(--text-primary) !important;
-  border: 1.5px solid var(--text-primary);
+  background-color: rgba(245, 158, 11, 0.08) !important;
+  color: #b45309 !important;
+  border: 1.5px solid #f59e0b !important;
+}
+.calendar-day-cell.event-pr:hover {
+  background-color: rgba(245, 158, 11, 0.18) !important;
+}
+
+/* 土日および祝日（赤系統） - 期間開始・終了は除く */
+.calendar-day-cell.in-period.day-sunday:not(.period-start):not(.period-end),
+.calendar-day-cell.in-period.day-saturday:not(.period-start):not(.period-end),
+.calendar-day-cell.in-period.event-holiday:not(.period-start):not(.period-end) {
+  background-color: rgba(239, 68, 68, 0.08) !important;
+  color: #dc2626 !important;
+}
+.calendar-day-cell.in-period.day-sunday:not(.period-start):not(.period-end):hover,
+.calendar-day-cell.in-period.day-saturday:not(.period-start):not(.period-end):hover,
+.calendar-day-cell.in-period.event-holiday:not(.period-start):not(.period-end):hover {
+  background-color: rgba(239, 68, 68, 0.18) !important;
+}
+
+/* 手動追加の祝日・イベント（青系統） - 期間開始・終了は除く */
+.calendar-day-cell.in-period.event-custom-holiday:not(.period-start):not(.period-end) {
+  background-color: rgba(59, 130, 246, 0.08) !important;
+  color: #1d4ed8 !important;
+}
+.calendar-day-cell.in-period.event-custom-holiday:not(.period-start):not(.period-end):hover {
+  background-color: rgba(59, 130, 246, 0.18) !important;
 }
 
 .day-number {
@@ -705,13 +735,13 @@ input[type="date"]:focus, input[type="text"]:focus {
 }
 
 .tag-meeting {
-  background-color: var(--text-primary);
+  background-color: #f59e0b;
   color: #ffffff;
   font-size: 0.5rem;
 }
 
 .tag-pr {
-  background-color: #2d4a43;
+  background-color: #f59e0b;
   color: #ffffff;
   font-size: 0.5rem;
 }
@@ -719,6 +749,12 @@ input[type="date"]:focus, input[type="text"]:focus {
 .tag-holiday {
   background-color: rgba(239, 68, 68, 0.12);
   color: #b91c1c;
+  font-size: 0.5rem;
+}
+
+.tag-custom-holiday {
+  background-color: rgba(59, 130, 246, 0.12);
+  color: #1d4ed8;
   font-size: 0.5rem;
 }
 
