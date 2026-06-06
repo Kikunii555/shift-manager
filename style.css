@@ -842,6 +842,7 @@ input[type="date"]:focus, input[type="text"]:focus {
   background-color: var(--card-bg);
   padding: 0 16px;
   transition: all var(--transition-speed) ease;
+  cursor: pointer;
 }
 
 .custom-date-input:focus-within {
@@ -877,6 +878,7 @@ input[type="date"]:focus, input[type="text"]:focus {
   background: transparent;
   -webkit-appearance: none;
   appearance: none;
+  pointer-events: none;
 }
 
 .custom-date-input.readonly input[type="date"] {

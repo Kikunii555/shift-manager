@@ -1263,6 +1263,20 @@ function renderTopView() {
 
   // イベントリスナーの設定
   function setupEventListeners() {
+    // カスタム日付入力欄全体をクリックしたときに日付ピッカーを開く
+    document.querySelectorAll('.custom-date-input:not(.readonly)').forEach(wrapper => {
+      wrapper.addEventListener('click', () => {
+        const input = wrapper.querySelector('input[type="date"]');
+        if (input) {
+          try {
+            input.showPicker();
+          } catch (err) {
+            console.warn('showPicker is not supported:', err);
+          }
+        }
+      });
+    });
+
     // 期間追加フォーム
     document.getElementById('addPeriodForm').addEventListener('submit', (e) => {
       e.preventDefault();
