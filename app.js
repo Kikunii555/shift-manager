@@ -583,8 +583,17 @@ function syncMeetingAndPrEvents() {
   // 画面描画
   function render() {
     // ビューの切り替え
-    document.getElementById('topView').classList.toggle('active', state.currentView === 'top');
-    document.getElementById('detailsView').classList.toggle('active', state.currentView === 'details');
+    const isTop = state.currentView === 'top';
+    document.getElementById('topView').classList.toggle('active', isTop);
+    document.getElementById('detailsView').classList.toggle('active', !isTop);
+
+    // ヘッダーの戻るボタンと設定ボタンの表示状態を同期
+    const backBtn = document.getElementById('backBtn');
+    const settingsBtn = document.getElementById('settingsBtn');
+    if (backBtn && settingsBtn) {
+      backBtn.style.display = isTop ? 'none' : 'inline-flex';
+      settingsBtn.style.display = isTop ? 'inline-flex' : 'none';
+    }
 
     if (state.currentView === 'top') {
       renderTopView();

@@ -1041,3 +1041,19 @@ input[type="date"]:focus, input[type="text"]:focus {
 #detailsCalendarContainer .calendar-day-cell.event-pr:hover {
   background-color: rgba(245, 158, 11, 0.08) !important;
 }
+
+/* 詳細画面の期間・進捗表示エリアの上部固定（Sticky）スタイル */
+.details-sticky-header {
+  position: sticky;
+  top: 84px; /* アプリヘッダーの高さ(約84px)の下にぴったり固定 */
+  z-index: 90;
+  background-color: var(--bg-color); /* 背景を不透明にしてスクロール項目を隠す */
+  padding-top: 8px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--border-color);
+  margin-left: -16px; /* 親要素 .view の padding (16px) 分を外側に広げる */
+  margin-right: -16px;
+  padding-left: 16px;
+  padding-right: 16px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05); /* 固定ヘッダーの下に浮いたような影を追加 */
+}

@@ -18,7 +18,7 @@
   <link rel="manifest" href="./manifest.json">
 
   <!-- CSS Stylesheet -->
-  <link rel="stylesheet" href="./style.css?v=23">
+  <link rel="stylesheet" href="./style.css?v=24">
 </head>
 
 <body>
@@ -27,7 +27,10 @@
 
     <!-- トップ画面用ヘッダー -->
     <header id="appHeader">
-      <h1>👷 指定表チェッカー</h1>
+      <div style="display: flex; align-items: center; gap: 8px; flex: 1;">
+        <button class="btn-icon" id="backBtn" style="display: none; font-size: 1.2rem; width: 38px; height: 38px; border-radius: 50%; padding: 0; align-items: center; justify-content: center; flex-shrink: 0;" title="戻る" aria-label="Back">⬅️</button>
+        <h1 style="margin: 0; display: flex; align-items: center; gap: 8px;">👷 指定表チェッカー</h1>
+      </div>
       <button class="btn-icon" id="settingsBtn" title="設定・データバックアップ" aria-label="Settings">
         ⚙️
       </button>
@@ -160,26 +163,21 @@
 
     <!-- 2. 詳細画面 (作業工程チェックリスト) -->
     <main id="detailsView" class="view">
-      <!-- 詳細用サブヘッダー -->
-      <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 8px;">
-        <button class="btn-icon" id="backBtn" title="戻る" aria-label="Back">
-          ⬅️
-        </button>
-        <div style="flex: 1;">
-          <h2 style="font-size: 0.85rem; color: var(--text-secondary); font-weight: 500;">選択中の期間</h2>
-          <div id="detailsTitle" style="font-size: 1.15rem; font-weight: 700; color: var(--text-primary); margin-bottom: 8px;"></div>
-          <!-- 全体の進捗数と進捗率、および進行位置の表示領域 -->
-          <div id="detailsProgressContainer" style="background: rgba(45, 74, 67, 0.04); padding: 12px; border-radius: var(--border-radius); border: 1px solid var(--border-color); font-size: 0.85rem; display: flex; flex-direction: column; gap: 6px; margin-top: 6px;">
-            <div style="display: flex; justify-content: space-between; font-weight: 600;">
-              <span>全体進捗: <span id="detailsProgressCount">0/0</span> 項目</span>
-              <span id="detailsProgressPercent" style="color: var(--accent-color);">0%</span>
-            </div>
-            <div class="progress-container" style="background-color: rgba(45, 74, 67, 0.1); height: 8px; border-radius: 4px;">
-              <div id="detailsProgressBar" class="progress-bar" style="width: 0%; height: 100%; border-radius: 4px; background: linear-gradient(90deg, var(--accent-color) 0%, var(--success-color) 100%); transition: width 0.3s ease;"></div>
-            </div>
-            <div id="detailsCurrentStatus" style="font-size: 0.8rem; color: var(--text-secondary); font-weight: 500; margin-top: 2px;">
-              進捗状況: 未着手
-            </div>
+      <!-- 固定ヘッダーエリア -->
+      <div class="details-sticky-header">
+        <h2 style="font-size: 0.85rem; color: var(--text-secondary); font-weight: 500;">選択中の期間</h2>
+        <div id="detailsTitle" style="font-size: 1.15rem; font-weight: 700; color: var(--text-primary); margin-bottom: 8px;"></div>
+        <!-- 全体の進捗数と進捗率、および進行位置の表示領域 -->
+        <div id="detailsProgressContainer" style="background: rgba(45, 74, 67, 0.04); padding: 12px; border-radius: var(--border-radius); border: 1px solid var(--border-color); font-size: 0.85rem; display: flex; flex-direction: column; gap: 6px; margin-top: 6px;">
+          <div style="display: flex; justify-content: space-between; font-weight: 600;">
+            <span>全体進捗: <span id="detailsProgressCount">0/0</span> 項目</span>
+            <span id="detailsProgressPercent" style="color: var(--accent-color);">0%</span>
+          </div>
+          <div class="progress-container" style="background-color: rgba(45, 74, 67, 0.1); height: 8px; border-radius: 4px;">
+            <div id="detailsProgressBar" class="progress-bar" style="width: 0%; height: 100%; border-radius: 4px; background: linear-gradient(90deg, var(--accent-color) 0%, var(--success-color) 100%); transition: width 0.3s ease;"></div>
+          </div>
+          <div id="detailsCurrentStatus" style="font-size: 0.8rem; color: var(--text-secondary); font-weight: 500; margin-top: 2px;">
+            進捗状況: 未着手
           </div>
         </div>
       </div>
@@ -265,7 +263,7 @@
   </div>
 
   <!-- JS スクリプト -->
-  <script src="./app.js?v=23"></script>
+  <script src="./app.js?v=24"></script>
 </body>
 
 </html>

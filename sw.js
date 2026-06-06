@@ -1,4 +1,4 @@
-const CACHE_NAME = 'shift-manager-v23';
+const CACHE_NAME = 'shift-manager-v24';
 const ASSETS = [
   './',
   './index.html',
