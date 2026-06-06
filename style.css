@@ -855,6 +855,22 @@ input[type="date"]:focus, input[type="text"]:focus {
   background-color: rgba(45, 74, 67, 0.02);
 }
 
+/* チェック時のポップアップCSSアニメーション */
+@keyframes popCheckbox {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.22); }
+  100% { transform: scale(1); }
+}
 
+@keyframes checkmarkAppear {
+  0% { transform: scale(0) rotate(-45deg); opacity: 0; }
+  100% { transform: scale(1) rotate(0deg); opacity: 1; }
+}
 
+.checklist-item.checked .custom-checkbox {
+  animation: popCheckbox 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+}
 
+.checklist-item.checked .custom-checkbox i {
+  animation: checkmarkAppear 0.28s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+}

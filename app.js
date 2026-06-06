@@ -919,6 +919,53 @@ function renderTopView() {
     return `${y}/${m}/${d}(${dayOf}) ${hh}:${mm}`;
   }
 
+  // 完了時の「ピコーン」音を鳴らす関数 (Web Audio API を使って合成)
+  function playCheckSound() {
+    try {
+      const AudioContext = window.AudioContext || window.webkitAudioContext;
+      if (!AudioContext) return;
+      const ctx = new AudioContext();
+      
+      const now = ctx.currentTime;
+      
+      // 1音目（ピ）- 587.33Hz (D5) 80ms
+      const osc1 = ctx.createOscillator();
+      const gain1 = ctx.createGain();
+      osc1.type = 'sine';
+      osc1.frequency.setValueAtTime(587.33, now);
+      gain1.gain.setValueAtTime(0.08, now);
+      gain1.gain.exponentialRampToValueAtTime(0.001, now + 0.08);
+      
+      osc1.connect(gain1);
+      gain1.connect(ctx.destination);
+      osc1.start(now);
+      osc1.stop(now + 0.08);
+      
+      // 2音目（コーン）- 880Hz (A5) 250ms
+      const osc2 = ctx.createOscillator();
+      const gain2 = ctx.createGain();
+      osc2.type = 'sine';
+      osc2.frequency.setValueAtTime(880.00, now + 0.07);
+      gain2.gain.setValueAtTime(0, now + 0.07);
+      gain2.gain.linearRampToValueAtTime(0.08, now + 0.09);
+      gain2.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
+      
+      osc2.connect(gain2);
+      gain2.connect(ctx.destination);
+      osc2.start(now + 0.07);
+      osc2.stop(now + 0.3);
+    } catch (e) {
+      console.warn("Web Audio API not supported or disabled:", e);
+    }
+  }
+
+  // Androidでの触覚フィードバック（短い振動）を発生させる関数
+  function triggerHapticFeedback() {
+    if (navigator.vibrate) {
+      navigator.vibrate(30); // 30ミリ秒の軽い振動
+    }
+  }
+
   // 日付を「〇月〇日(曜日)」フォーマットに変換
   function formatDateJapanese(dateString) {
     if (!dateString) return '';
@@ -1069,6 +1116,10 @@ function renderTopView() {
       if (task) {
         task.checked = !task.checked;
         task.checkedAt = task.checked ? new Date().toISOString() : null;
+        if (task.checked) {
+          playCheckSound();
+          triggerHapticFeedback();
+        }
         if (task.subtasks && task.subtasks.length > 0) {
           task.subtasks.forEach(st => {
             st.checked = task.checked;
@@ -1091,6 +1142,10 @@ function renderTopView() {
         if (subtask) {
           subtask.checked = !subtask.checked;
           subtask.checkedAt = subtask.checked ? new Date().toISOString() : null;
+          if (subtask.checked) {
+            playCheckSound();
+            triggerHapticFeedback();
+          }
           
           const allChecked = task.subtasks.every(st => st.checked);
           const wasChecked = task.checked;
