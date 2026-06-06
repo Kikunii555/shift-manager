@@ -840,7 +840,14 @@ function renderTopView() {
           if (e.target.closest('.subtask-badge')) {
             return;
           }
+          const checkbox = mainRow.querySelector('.custom-checkbox');
+          const willCheck = !task.checked;
           toggleTask(period.id, task.id);
+          if (willCheck) {
+            createSparkles(checkbox);
+            mainRow.classList.add('pop-active');
+            setTimeout(() => mainRow.classList.remove('pop-active'), 550);
+          }
         });
 
         item.appendChild(mainRow);
@@ -878,7 +885,14 @@ function renderTopView() {
             `;
             
             subitem.querySelector('.checklist-item-left').addEventListener('click', () => {
+              const checkbox = subitem.querySelector('.custom-checkbox');
+              const willCheck = !st.checked;
               toggleSubtask(period.id, task.id, st.id);
+              if (willCheck) {
+                createSparkles(checkbox);
+                subitem.classList.add('pop-active');
+                setTimeout(() => subitem.classList.remove('pop-active'), 550);
+              }
             });
             
             subtaskList.appendChild(subitem);
@@ -919,43 +933,41 @@ function renderTopView() {
     return `${y}/${m}/${d}(${dayOf}) ${hh}:${mm}`;
   }
 
-  // 完了時の「ピコーン」音を鳴らす関数 (Web Audio API を使って合成)
-  function playCheckSound() {
-    try {
-      const AudioContext = window.AudioContext || window.webkitAudioContext;
-      if (!AudioContext) return;
-      const ctx = new AudioContext();
+  // チェックボックスの周囲にキラキラ（スパーク）を散らすエフェクト関数
+  function createSparkles(element) {
+    if (!element) return;
+    const rect = element.getBoundingClientRect();
+    const x = rect.left + rect.width / 2;
+    const y = rect.top + rect.height / 2;
+    
+    // 8個のパーティクルを放射状に生成
+    for (let i = 0; i < 8; i++) {
+      const particle = document.createElement('div');
+      particle.className = 'sparkle-particle';
       
-      const now = ctx.currentTime;
+      // 角度（45度間隔に少しランダム性を加える）と速度
+      const angle = (i * 45) + (Math.random() * 20 - 10);
+      const speed = 30 + Math.random() * 30; // 飛び散る距離
+      const size = 5 + Math.random() * 4;   // パーティクルの大きさ
       
-      // 1音目（ピ）- 587.33Hz (D5) 80ms
-      const osc1 = ctx.createOscillator();
-      const gain1 = ctx.createGain();
-      osc1.type = 'sine';
-      osc1.frequency.setValueAtTime(587.33, now);
-      gain1.gain.setValueAtTime(0.08, now);
-      gain1.gain.exponentialRampToValueAtTime(0.001, now + 0.08);
+      particle.style.setProperty('--angle', `${angle}deg`);
+      particle.style.setProperty('--speed', `${speed}px`);
+      particle.style.setProperty('--size', `${size}px`);
       
-      osc1.connect(gain1);
-      gain1.connect(ctx.destination);
-      osc1.start(now);
-      osc1.stop(now + 0.08);
+      // パステル系の華やかな色をランダムに適用
+      const colors = ['#2d4a43', '#4d7066', '#a3b899', '#f3b05a', '#ffffff'];
+      particle.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
       
-      // 2音目（コーン）- 880Hz (A5) 250ms
-      const osc2 = ctx.createOscillator();
-      const gain2 = ctx.createGain();
-      osc2.type = 'sine';
-      osc2.frequency.setValueAtTime(880.00, now + 0.07);
-      gain2.gain.setValueAtTime(0, now + 0.07);
-      gain2.gain.linearRampToValueAtTime(0.08, now + 0.09);
-      gain2.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
+      // 初期位置（スクロール分を加算）
+      particle.style.left = `${window.scrollX + x}px`;
+      particle.style.top = `${window.scrollY + y}px`;
       
-      osc2.connect(gain2);
-      gain2.connect(ctx.destination);
-      osc2.start(now + 0.07);
-      osc2.stop(now + 0.3);
-    } catch (e) {
-      console.warn("Web Audio API not supported or disabled:", e);
+      document.body.appendChild(particle);
+      
+      // アニメーション終了（0.6秒）後に自動消去
+      setTimeout(() => {
+        particle.remove();
+      }, 600);
     }
   }
 
@@ -1117,7 +1129,6 @@ function renderTopView() {
         task.checked = !task.checked;
         task.checkedAt = task.checked ? new Date().toISOString() : null;
         if (task.checked) {
-          playCheckSound();
           triggerHapticFeedback();
         }
         if (task.subtasks && task.subtasks.length > 0) {
@@ -1143,7 +1154,6 @@ function renderTopView() {
           subtask.checked = !subtask.checked;
           subtask.checkedAt = subtask.checked ? new Date().toISOString() : null;
           if (subtask.checked) {
-            playCheckSound();
             triggerHapticFeedback();
           }
           
