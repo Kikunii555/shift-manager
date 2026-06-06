@@ -958,6 +958,9 @@ function renderTopView() {
         checklistContainer.appendChild(item);
       });
     });
+
+    // 詳細画面カレンダーを描画
+    renderDetailsCalendar(period);
   }
 
   // 完了日時の日本語フォーマット関数
@@ -1585,4 +1588,149 @@ function renderTopView() {
       }
     }
     return "なし";
+  }
+
+  // 詳細画面内に閲覧専用のカレンダーを描画する関数
+  function renderDetailsCalendar(period) {
+    const container = document.getElementById('detailsCalendarContainer');
+    if (!container) return;
+    container.innerHTML = '';
+
+    const startDateVal = period.startDate;
+    if (!startDateVal) return;
+
+    const start = parseDateLocal(startDateVal);
+    if (!start) return;
+
+    const end = new Date(start);
+    end.setDate(start.getDate() + 27); // 28日間
+
+    // 表示する月（開始日の月、および終了日が別月なら終了日の月も）
+    let rangeTitle = `${start.getFullYear()}年 ${start.getMonth() + 1}月`;
+    if (start.getMonth() !== end.getMonth() || start.getFullYear() !== end.getFullYear()) {
+      rangeTitle += ` - ${end.getMonth() + 1}月`;
+    }
+
+    // 枠線を少し丸くしたカード風のスタイルにするためのラッパーを作成
+    const wrapper = document.createElement('div');
+    wrapper.style.background = '#ffffff';
+    wrapper.style.border = '1px solid var(--border-color)';
+    wrapper.style.borderRadius = 'var(--border-radius)';
+    wrapper.style.padding = '16px';
+    wrapper.style.display = 'flex';
+    wrapper.style.flexDirection = 'column';
+    wrapper.style.gap = '8px';
+
+    const titleEl = document.createElement('div');
+    titleEl.className = 'calendar-month-title';
+    titleEl.innerText = rangeTitle;
+    wrapper.appendChild(titleEl);
+
+    const daysHeader = document.createElement('div');
+    daysHeader.className = 'calendar-week-header';
+    daysHeader.style.display = 'grid';
+    daysHeader.style.gridTemplateColumns = '45px repeat(7, 1fr)';
+    ['週', '日', '月', '火', '水', '木', '金', '土'].forEach(dayName => {
+      const dayNameEl = document.createElement('div');
+      dayNameEl.innerText = dayName;
+      daysHeader.appendChild(dayNameEl);
+    });
+    wrapper.appendChild(daysHeader);
+
+    const daysGrid = document.createElement('div');
+    daysGrid.className = 'calendar-days-grid';
+    daysGrid.style.display = 'grid';
+    daysGrid.style.gridTemplateColumns = '45px repeat(7, 1fr)';
+
+    for (let i = 0; i < 28; i++) {
+      // 7日ごとに週ラベルを挿入
+      if (i % 7 === 0) {
+        const weekLabel = document.createElement('div');
+        weekLabel.className = 'calendar-week-label';
+        weekLabel.style.display = 'flex';
+        weekLabel.style.alignItems = 'center';
+        weekLabel.style.justifyContent = 'center';
+        weekLabel.style.fontSize = '0.75rem';
+        weekLabel.style.fontWeight = 'bold';
+        weekLabel.style.color = 'var(--text-secondary)';
+        weekLabel.innerText = `第${Math.floor(i / 7) + 1}週`;
+        daysGrid.appendChild(weekLabel);
+      }
+
+      const current = new Date(start);
+      current.setDate(start.getDate() + i);
+      const currentStr = formatDateLocal(current);
+
+      const dayEl = document.createElement('div');
+      dayEl.className = 'calendar-day-cell in-period';
+      dayEl.dataset.date = currentStr;
+
+      const currentDay = current.getDay();
+      if (currentDay === 0) {
+        dayEl.classList.add('day-sunday');
+      } else if (currentDay === 6) {
+        dayEl.classList.add('day-saturday');
+      }
+
+      // 表示する日付テキスト
+      const isMonthStart = current.getDate() === 1;
+      const dateText = document.createElement('span');
+      dateText.className = 'day-number';
+      if (i === 0 || isMonthStart) {
+        dateText.innerText = `${current.getMonth() + 1}/${current.getDate()}`;
+        dateText.style.fontSize = '0.7rem';
+      } else {
+        dateText.innerText = current.getDate();
+      }
+      dayEl.appendChild(dateText);
+
+      if (i === 0) dayEl.classList.add('period-start');
+      if (i === 27) dayEl.classList.add('period-end');
+
+      // イベントマッピング
+      // 1. 会議日
+      const meetingVal = period.meetingDate;
+      if (meetingVal === currentStr) {
+        dayEl.classList.add('event-meeting');
+        const badge = document.createElement('span');
+        badge.className = 'event-tag tag-meeting';
+        badge.innerText = `会議${getWeekMarker(currentStr, startDateVal)}`;
+        dayEl.appendChild(badge);
+      }
+
+      // 2. 広報日
+      const prVal = period.prDate;
+      if (prVal === currentStr) {
+        dayEl.classList.add('event-pr');
+        const badge = document.createElement('span');
+        badge.className = 'event-tag tag-pr';
+        badge.innerText = `広報${getWeekMarker(currentStr, startDateVal)}`;
+        dayEl.appendChild(badge);
+      }
+
+      // 3. 祝日・手動イベント
+      const isHoliday = period.holidays ? period.holidays.find(h => h.date === currentStr && !h.name.startsWith("【会議】") && !h.name.startsWith("【広報】")) : null;
+      if (isHoliday) {
+        const isCustomHoliday = isHoliday.name === "振替休日" || isHoliday.name === "国民の休日" ? false : !["元日", "成人の日", "建国記念の日", "天皇誕生日", "春分の日", "昭和の日", "憲法記念日", "みどりの日", "こどもの日", "海の日", "山の日", "敬老の日", "秋分の日", "スポーツの日", "文化の日", "勤労感謝の日"].includes(isHoliday.name);
+        
+        if (isCustomHoliday) {
+          dayEl.classList.add('event-custom-holiday');
+          const badge = document.createElement('span');
+          badge.className = 'event-tag tag-custom-holiday';
+          badge.innerText = isHoliday.name.slice(0, 3);
+          dayEl.appendChild(badge);
+        } else {
+          dayEl.classList.add('event-holiday');
+          const badge = document.createElement('span');
+          badge.className = 'event-tag tag-holiday';
+          badge.innerText = isHoliday.name.slice(0, 3);
+          dayEl.appendChild(badge);
+        }
+      }
+
+      daysGrid.appendChild(dayEl);
+    }
+
+    wrapper.appendChild(daysGrid);
+    container.appendChild(wrapper);
   }

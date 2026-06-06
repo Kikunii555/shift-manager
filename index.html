@@ -18,7 +18,7 @@
   <link rel="manifest" href="./manifest.json">
 
   <!-- CSS Stylesheet -->
-  <link rel="stylesheet" href="./style.css?v=22">
+  <link rel="stylesheet" href="./style.css?v=23">
 </head>
 
 <body>
@@ -184,9 +184,12 @@
         </div>
       </div>
 
+      <!-- 詳細画面用カレンダー描画コンテナ -->
+      <div id="detailsCalendarContainer" style="margin-top: 14px;"></div>
+
       <!-- 祝日・イベントセクション -->
       <section id="detailsHolidaysSection" class="holidays-section" style="padding: 14px 16px; background: rgba(255,255,255,0.02); border: 1px solid var(--border-color); border-radius: var(--border-radius); display: flex; flex-direction: column; gap: 10px;">
-        <h3 style="font-size: 0.85rem; color: var(--text-secondary); font-weight: 600;">🇯🇵 減区・イベント</h3>
+        <h3 style="font-size: 0.85rem; color: var(--text-secondary); font-weight: 600;">🇯🇵 この期間の祝日・イベント</h3>
         <div id="detailsHolidaysList" style="display: flex; flex-wrap: wrap; gap: 8px;">
           <!-- 祝日バッジが動的に追加されます -->
         </div>
@@ -262,7 +265,7 @@
   </div>
 
   <!-- JS スクリプト -->
-  <script src="./app.js?v=22"></script>
+  <script src="./app.js?v=23"></script>
 </body>
 
 </html>

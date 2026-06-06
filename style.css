@@ -1021,3 +1021,23 @@ input[type="date"]:focus, input[type="text"]:focus {
     margin-left: 30px !important; /* サブタスクのチェックボックス(20px) + マージン(10px)分 */
   }
 }
+
+/* 詳細画面用カレンダーのホバー効果とカーソルをリセット */
+#detailsCalendarContainer .calendar-day-cell {
+  cursor: default !important;
+}
+#detailsCalendarContainer .calendar-day-cell.in-period:hover {
+  background-color: rgba(167, 243, 208, 0.15) !important; /* 初期色に戻す */
+}
+#detailsCalendarContainer .calendar-day-cell.in-period.day-sunday:hover,
+#detailsCalendarContainer .calendar-day-cell.in-period.day-saturday:hover,
+#detailsCalendarContainer .calendar-day-cell.in-period.event-holiday:hover {
+  background-color: rgba(239, 68, 68, 0.08) !important;
+}
+#detailsCalendarContainer .calendar-day-cell.in-period.event-custom-holiday:hover {
+  background-color: rgba(59, 130, 246, 0.08) !important;
+}
+#detailsCalendarContainer .calendar-day-cell.event-meeting:hover,
+#detailsCalendarContainer .calendar-day-cell.event-pr:hover {
+  background-color: rgba(245, 158, 11, 0.08) !important;
+}
