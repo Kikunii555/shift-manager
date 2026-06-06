@@ -31,28 +31,24 @@ function parseDateLocal(dateStr) {
 // カテゴリ定義
 const CATEGORIES = [
   { id: 1, name: "1. 作成前の準備段階" },
-  { id: 2, name: "2. 実際にシフトを入れて記入" },
-  { id: 3, name: "3. PCのシステムに入力して上に報告" },
-  { id: 4, name: "4. 確認後認証が出たら修正して仕上げ" },
-  { id: 5, name: "5. 最後の仕上げと次の準備" }
+  { id: 2, name: "2. 指定表への記入作業" },
+  { id: 3, name: "3. PCシステムへの入力作業" },
+  { id: 4, name: "4. 提出～認証前" },
+  { id: 5, name: "5. 認証後～仕上げと次の準備" }
 ];
 
 // 初期設定のチェック項目テンプレート
 const DEFAULT_TASKS_TEMPLATE = [
-  { categoryId: 1, text: "各スタッフの希望休・休暇申請の回収と確認" },
-  { categoryId: 1, text: "必要人数（人員基準・稼働目標）の確認" },
-  { categoryId: 1, text: "特別なイベントや繁忙期のスケジュールの確認" },
-  { categoryId: 2, text: "公休数・連続勤務日数の上限チェック" },
-  { categoryId: 2, text: "各時間帯・曜日の必要人員（スキルバランスなど）の確認" },
-  { categoryId: 2, text: "夜勤明けの翌日シフト（連休ルール等）のチェック" },
-  { categoryId: 3, text: "社内システム（PC）へのデータ入力" },
-  { categoryId: 3, text: "入力ミス・転記ミスの最終ダブルチェック" },
-  { categoryId: 3, text: "上司または管理部門への報告・承認申請の送信" },
-  { categoryId: 4, text: "指摘事項や修正依頼の有無を確認" },
-  { categoryId: 4, text: "必要に応じてシフトの微調整と修正箇所の再確認" },
-  { categoryId: 4, text: "最終承認（認証）の獲得" },
-  { categoryId: 5, text: "確定した勤務指定表の印刷・配布・共有（スタッフ周知）" },
-  { categoryId: 5, text: "次の4週間（28日分）のスケジュール確認と、希望休提出締切のアナウンス" }
+  { categoryId: 1, text: "小項目１" },
+  { categoryId: 1, text: "小項目２" },
+  { categoryId: 2, text: "小項目１" },
+  { categoryId: 2, text: "小項目２" },
+  { categoryId: 3, text: "小項目１" },
+  { categoryId: 3, text: "小項目２" },
+  { categoryId: 4, text: "小項目１" },
+  { categoryId: 4, text: "小項目２" },
+  { categoryId: 5, text: "小項目１" },
+  { categoryId: 5, text: "小項目２" }
 ];
 
 // 初期化処理
