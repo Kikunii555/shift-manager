@@ -18,7 +18,7 @@
   <link rel="manifest" href="./manifest.json">
 
   <!-- CSS Stylesheet -->
-  <link rel="stylesheet" href="./style.css">
+  <link rel="stylesheet" href="./style.css?v=11">
 </head>
 
 <body>
@@ -39,47 +39,106 @@
       <section class="add-period-section">
         <form id="addPeriodForm">
           <div class="form-group">
-            <label>📅 新しい勤務期間を登録する (4週間/28日分)</label>
-            <div class="form-row">
+            <label style="font-size: 1rem; font-weight: 700; color: var(--text-primary);">📅 新しい勤務期間を登録する</label>
+            
+            <div class="form-row" style="margin-top: 10px;">
               <div>
-                <label for="startDate" style="font-size:0.75rem;">開始日 <span id="startDateDay" style="color: #a5b4fc; font-weight: bold;"></span></label>
-                <input type="date" id="startDate" required>
+                <label style="font-size:0.75rem;">開始日</label>
+                <div class="custom-date-input">
+                  <span class="custom-date-text" id="startDateText">未設定</span>
+                  <input type="date" id="startDate" required>
+                  <span class="custom-date-icon">📅</span>
+                </div>
               </div>
               <div>
-                <label for="endDate" style="font-size:0.75rem;">終了日 (自動計算) <span id="endDateDay" style="color: #a5b4fc; font-weight: bold;"></span></label>
-                <input type="date" id="endDate" required readonly
-                  style="opacity: 0.8; cursor: not-allowed; background-color: rgba(255,255,255,0.02);">
+                <label style="font-size:0.75rem;">終了日 (自動計算)</label>
+                <div class="custom-date-input readonly">
+                  <span class="custom-date-text" id="endDateText">未設定</span>
+                  <input type="date" id="endDate" required readonly>
+                </div>
               </div>
             </div>
+
+            <!-- 自動決定される勤務期間の曜日付き表示 -->
+            <div id="periodDisplayTitle" style="font-size: 0.9rem; font-weight: 700; color: var(--text-primary); margin-top: 12px; padding: 10px; background: rgba(45, 74, 67, 0.05); border-radius: var(--border-radius); text-align: center; border: 1px solid var(--border-color);">
+              期間：未設定
+            </div>
+
             <!-- 後で登録データとして使用するため、非表示で保持します -->
             <input type="hidden" id="saveDeadline">
             <input type="hidden" id="confirmDeadline">
+            <input type="hidden" id="meetingDate">
+            <input type="hidden" id="prDate">
 
-            <div class="form-row" style="margin-top: 10px;">
-              <div>
-                <label for="meetingDate" style="font-size:0.75rem;">経推・会議日 <span id="meetingDateDay" style="color: #a5b4fc; font-weight: bold;"></span></label>
-                <input type="date" id="meetingDate">
-              </div>
-              <div>
-                <label for="prDate" style="font-size:0.75rem;">広報 (日付選択) <span id="prDateDay" style="color: #a5b4fc; font-weight: bold;"></span></label>
-                <input type="date" id="prDate">
-              </div>
-            </div>
+            <!-- 詳細設定用アコーディオン -->
+            <div class="accordion-container" id="formAccordion" style="margin-top: 14px;">
+              <button type="button" class="accordion-trigger" id="accordionTrigger">
+                <span>⚙️ 会議日・広報・祝日の詳細設定</span>
+                <span class="accordion-icon">▼</span>
+              </button>
+              <div class="accordion-content" id="accordionContent">
+                <div class="form-row" style="margin-top: 14px;">
+                  <div>
+                    <label for="meetingSelect" style="font-size:0.75rem;">経推・会議日の指定</label>
+                    <select id="meetingSelect" style="width: 100%; padding: 12px; border-radius: var(--border-radius); border: 1px solid var(--border-color); background-color: var(--card-bg); color: var(--text-primary); font-family: var(--font-family); font-size: 0.9rem; outline: none; -webkit-appearance: none; appearance: none; background-image: url('data:image/svg+xml;charset=UTF-8,%3Csvg%20xmlns%3D%22http%3E//www.w3.org/2000/svg%22%20width%3D%2224%22%20height%3D%2224%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22%232d4a43%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpolyline%20points%3D%226%209%2012%2015%2018%209%22%3E%3C/polyline%3E%3C/svg%3E'); background-repeat: no-repeat; background-position: right 12px center; background-size: 14px;">
+                      <option value="2-4" selected>第2木曜日 (基本)</option>
+                      <option value="1-4">第1木曜日</option>
+                      <option value="3-4">第3木曜日</option>
+                      <option value="4-4">第4木曜日</option>
+                      <option value="5-4">第5木曜日</option>
+                      <option value="1-3">第1水曜日</option>
+                      <option value="2-3">第2水曜日</option>
+                      <option value="3-3">第3水曜日</option>
+                      <option value="4-3">第4水曜日</option>
+                      <option value="5-3">第5水曜日</option>
+                      <option value="1-5">第1金曜日</option>
+                      <option value="2-5">第2金曜日</option>
+                      <option value="3-5">第3金曜日</option>
+                      <option value="4-5">第4金曜日</option>
+                      <option value="5-5">第5金曜日</option>
+                      <option value="1-1">第1月曜日</option>
+                      <option value="2-1">第2月曜日</option>
+                      <option value="3-1">第3月曜日</option>
+                      <option value="4-1">第4月曜日</option>
+                      <option value="5-1">第5月曜日</option>
+                      <option value="1-2">第1火曜日</option>
+                      <option value="2-2">第2火曜日</option>
+                      <option value="3-2">第3火曜日</option>
+                      <option value="4-2">第4火曜日</option>
+                      <option value="5-2">第5火曜日</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label style="font-size:0.75rem;">広報予定日 (カレンダー選択可)</label>
+                    <div class="custom-date-input">
+                      <span class="custom-date-text" id="prDateDisplayText">未設定</span>
+                      <input type="date" id="prDateDisplay">
+                      <span class="custom-date-icon">📅</span>
+                    </div>
+                  </div>
+                </div>
 
-            <!-- 祝日管理セクション -->
-            <div style="margin-top: 14px; padding: 12px; background: rgba(255,255,255,0.02); border: 1px solid var(--border-color); border-radius: var(--border-radius);">
-              <label style="font-size:0.8rem; font-weight:600; display:block; margin-bottom: 8px;">🇯🇵 この期間の祝日・イベント</label>
-              
-              <!-- 自動取得・手動追加された祝日リスト -->
-              <div id="formHolidaysContainer" style="display:flex; flex-wrap:wrap; gap:8px; margin-bottom:10px;">
-                <!-- JSで動的にバッジが追加されます -->
-              </div>
-              
-              <!-- 祝日の手動追加フォーム -->
-              <div style="display:flex; gap:6px;">
-                <input type="date" id="newHolidayDate" style="padding: 8px 10px; font-size: 0.85rem; flex: 1.2;">
-                <input type="text" id="newHolidayName" placeholder="祝日・イベント名" style="padding: 8px 10px; font-size: 0.85rem; flex: 1.8;">
-                <button type="button" id="addHolidayFormBtn" class="btn-primary" style="padding: 0 12px; font-size: 0.85rem; border-radius: 8px; box-shadow: none;">追加</button>
+                <!-- インラインカレンダーUI描画コンテナ -->
+                <div id="formCalendarContainer" style="margin-top: 14px;">
+                  <!-- JSでカレンダーが動的に追加されます -->
+                </div>
+
+                <!-- 祝日管理セクション -->
+                <div style="margin-top: 14px; padding: 12px; background: rgba(255,255,255,0.02); border: 1px solid var(--border-color); border-radius: var(--border-radius);">
+                  <label style="font-size:0.8rem; font-weight:600; display:block; margin-bottom: 8px;">🇯🇵 この期間の祝日・イベント</label>
+                  
+                  <!-- 自動取得・手動追加された祝日リスト -->
+                  <div id="formHolidaysContainer" style="display:flex; flex-wrap:wrap; gap:8px; margin-bottom:10px;">
+                    <!-- JSで動的にバッジが追加されます -->
+                  </div>
+                  
+                  <!-- 祝日の手動追加フォーム -->
+                  <div style="display:flex; gap:6px;">
+                    <input type="date" id="newHolidayDate" style="padding: 8px 10px; font-size: 0.85rem; flex: 1.2;">
+                    <input type="text" id="newHolidayName" placeholder="祝日・イベント名" style="padding: 8px 10px; font-size: 0.85rem; flex: 1.8;">
+                    <button type="button" id="addHolidayFormBtn" class="btn-primary" style="padding: 0 12px; font-size: 0.85rem; border-radius: 8px; box-shadow: none;">追加</button>
+                  </div>
+                </div>
               </div>
             </div>
 
@@ -196,7 +255,7 @@
   </div>
 
   <!-- JS スクリプト -->
-  <script src="./app.js"></script>
+  <script src="./app.js?v=11"></script>
 </body>
 
 </html>

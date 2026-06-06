@@ -1,16 +1,16 @@
 @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Noto+Sans+JP:wght@300;400;500;700&display=swap');
 
 :root {
-  --bg-color: #060814;
-  --card-bg: #0e131f;
-  --card-hover: #171e2e;
-  --text-primary: #f3f4f6;
-  --text-secondary: #9ca3af;
-  --accent-color: #00f0ff;
-  --accent-gradient: linear-gradient(135deg, #00f0ff 0%, #ff007f 100%);
+  --bg-color: #faf9f6;
+  --card-bg: #ffffff;
+  --card-hover: #f3f1eb;
+  --text-primary: #2d4a43;
+  --text-secondary: #60736f;
+  --accent-color: #2d4a43;
+  --accent-gradient: linear-gradient(135deg, #2d4a43 0%, #3d665c 100%);
   --success-color: #10b981;
-  --danger-color: #ff007f;
-  --border-color: rgba(0, 240, 255, 0.08);
+  --danger-color: #ef4444;
+  --border-color: rgba(45, 74, 67, 0.12);
   --font-family: 'Outfit', 'Noto Sans JP', sans-serif;
   --border-radius: 16px;
   --transition-speed: 0.25s;
@@ -50,7 +50,7 @@ body {
 /* ヘッダー */
 header {
   padding: 20px 16px;
-  background: rgba(14, 19, 31, 0.85);
+  background: rgba(250, 249, 246, 0.85);
   backdrop-filter: blur(12px);
   position: sticky;
   top: 0;
@@ -65,7 +65,7 @@ header h1 {
   font-size: 1.25rem;
   font-weight: 700;
   letter-spacing: 0.5px;
-  background: linear-gradient(135deg, #8af6ff 0%, #ff007f 100%);
+  background: linear-gradient(135deg, #2d4a43 0%, #4f8275 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   display: flex;
@@ -317,8 +317,8 @@ input[type="date"]:focus, input[type="text"]:focus {
 }
 
 .checklist-item.checked {
-  background-color: rgba(14, 19, 31, 0.4);
-  border-color: rgba(16, 185, 129, 0.15);
+  background-color: rgba(45, 74, 67, 0.04);
+  border-color: rgba(45, 74, 67, 0.1);
 }
 
 .checklist-item.checked .custom-checkbox {
@@ -376,7 +376,7 @@ input[type="date"]:focus, input[type="text"]:focus {
   left: 50%;
   transform: translateX(-50%) translateY(100px);
   background-color: #1e1e24;
-  color: var(--text-primary);
+  color: #ffffff;
   padding: 12px 24px;
   border-radius: 30px;
   box-shadow: 0 10px 25px rgba(0,0,0,0.3);
@@ -465,8 +465,8 @@ input[type="date"]:focus, input[type="text"]:focus {
 .category-group-header {
   font-size: 0.95rem;
   font-weight: 700;
-  color: #8af6ff;
-  background-color: rgba(0, 240, 255, 0.08);
+  color: var(--text-primary);
+  background-color: rgba(45, 74, 67, 0.06);
   padding: 10px 14px;
   border-left: 4px solid var(--accent-color);
   border-radius: 4px 12px 12px 4px;
@@ -496,9 +496,9 @@ input[type="date"]:focus, input[type="text"]:focus {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  background: rgba(239, 68, 68, 0.12);
-  border: 1px solid rgba(239, 68, 68, 0.25);
-  color: #f87171;
+  background: rgba(239, 68, 68, 0.08);
+  border: 1px solid rgba(239, 68, 68, 0.2);
+  color: #b91c1c;
   padding: 6px 12px;
   border-radius: 20px;
   font-size: 0.8rem;
@@ -507,9 +507,9 @@ input[type="date"]:focus, input[type="text"]:focus {
 }
 
 .holiday-badge.custom-event {
-  background: rgba(99, 102, 241, 0.12);
-  border: 1px solid rgba(99, 102, 241, 0.25);
-  color: #818cf8;
+  background: rgba(45, 74, 67, 0.08);
+  border: 1px solid rgba(45, 74, 67, 0.2);
+  color: var(--text-primary);
 }
 
 .holiday-badge-delete {
@@ -530,7 +530,7 @@ input[type="date"]:focus, input[type="text"]:focus {
 
 .holiday-badge-delete:hover {
   opacity: 1;
-  background: rgba(255, 255, 255, 0.15);
+  background: rgba(0, 0, 0, 0.05);
 }
 
 /* 期間カード内のメタ情報グリッド */
@@ -540,7 +540,7 @@ input[type="date"]:focus, input[type="text"]:focus {
   gap: 8px;
   font-size: 0.8rem;
   color: var(--text-secondary);
-  background: rgba(255, 255, 255, 0.015);
+  background: rgba(45, 74, 67, 0.03);
   padding: 12px;
   border-radius: 12px;
   border: 1px solid var(--border-color);
@@ -564,11 +564,11 @@ input[type="date"]:focus, input[type="text"]:focus {
 }
 
 .meta-value.highlight-danger {
-  color: #fca5a5;
+  color: #b91c1c;
 }
 
 .meta-value.highlight-accent {
-  color: #a5b4fc;
+  color: var(--text-primary);
 }
 
 .period-card-holidays {
@@ -580,11 +580,261 @@ input[type="date"]:focus, input[type="text"]:focus {
 
 .holiday-mini-tag {
   font-size: 0.7rem;
-  background: rgba(239, 68, 68, 0.08);
+  background: rgba(239, 68, 68, 0.06);
   border: 1px solid rgba(239, 68, 68, 0.15);
-  color: #fca5a5;
+  color: #b91c1c;
   padding: 2px 6px;
   border-radius: 4px;
 }
+
+/* ==========================================================================
+   北欧スタイル用カレンダーUI
+   ========================================================================== */
+#formCalendarContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  margin-top: 14px;
+  background: #ffffff;
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius);
+  padding: 16px;
+}
+
+.calendar-month-box {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.calendar-month-title {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  text-align: center;
+  margin-bottom: 4px;
+}
+
+.calendar-week-header {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  text-align: center;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  border-bottom: 1px solid var(--border-color);
+  padding-bottom: 4px;
+}
+
+.calendar-days-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  row-gap: 6px;
+  column-gap: 4px;
+}
+
+.calendar-day-empty {
+  aspect-ratio: 1.1;
+}
+
+.calendar-day-cell {
+  position: relative;
+  aspect-ratio: 1.1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  padding-top: 4px;
+  border-radius: 8px;
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: #cbd5e1; /* スレート300 (期間外) */
+  cursor: default;
+  transition: all 0.2s ease;
+}
+
+.calendar-day-cell.in-period {
+  color: var(--text-primary);
+  background-color: rgba(167, 243, 208, 0.15); /* 薄いミント */
+  cursor: pointer;
+}
+
+.calendar-day-cell.in-period:hover {
+  background-color: rgba(167, 243, 208, 0.35);
+}
+
+.calendar-day-cell.period-start {
+  background-color: var(--text-primary) !important;
+  color: #ffffff !important;
+  font-weight: 700;
+}
+
+.calendar-day-cell.period-end {
+  background-color: #3d665c !important;
+  color: #ffffff !important;
+  font-weight: 700;
+}
+
+.calendar-day-cell.event-meeting {
+  border: 1.5px dashed var(--text-primary);
+}
+
+.calendar-day-cell.event-pr {
+  background-color: #f5e6d3 !important; /* サンドベージュ */
+  color: var(--text-primary) !important;
+  border: 1.5px solid var(--text-primary);
+}
+
+.day-number {
+  z-index: 2;
+}
+
+/* カレンダー内のイベントタグ */
+.event-tag {
+  position: absolute;
+  bottom: 2px;
+  font-size: 0.55rem;
+  padding: 1px 3px;
+  border-radius: 4px;
+  max-width: 90%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-weight: bold;
+  z-index: 3;
+}
+
+.tag-meeting {
+  background-color: var(--text-primary);
+  color: #ffffff;
+  font-size: 0.5rem;
+}
+
+.tag-pr {
+  background-color: #2d4a43;
+  color: #ffffff;
+  font-size: 0.5rem;
+}
+
+.tag-holiday {
+  background-color: rgba(239, 68, 68, 0.12);
+  color: #b91c1c;
+  font-size: 0.5rem;
+}
+
+/* アコーディオンのスタイル */
+.accordion-container {
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius);
+  overflow: hidden;
+  background-color: var(--card-bg);
+  transition: border-color var(--transition-speed) ease;
+}
+
+.accordion-trigger {
+  width: 100%;
+  padding: 14px 16px;
+  background: none;
+  border: none;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  cursor: pointer;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.accordion-trigger:hover {
+  background-color: var(--card-hover);
+}
+
+.accordion-icon {
+  transition: transform var(--transition-speed) ease;
+  font-size: 0.8rem;
+}
+
+.accordion-container.active .accordion-icon {
+  transform: rotate(180deg);
+}
+
+.accordion-content {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.35s cubic-bezier(0.4, 0, 0.2, 1), padding 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+  padding: 0 16px;
+}
+
+.accordion-container.active .accordion-content {
+  max-height: 2500px;
+  padding: 0 16px 16px 16px;
+  overflow: visible;
+}
+
+/* ==========================================================================
+   カスタム日付入力欄（曜日表示対応）
+   ========================================================================== */
+.custom-date-input {
+  position: relative;
+  width: 100%;
+  height: 50px;
+  display: flex;
+  align-items: center;
+  border-radius: var(--border-radius);
+  border: 1px solid var(--border-color);
+  background-color: var(--card-bg);
+  padding: 0 16px;
+  transition: all var(--transition-speed) ease;
+}
+
+.custom-date-input:focus-within {
+  border-color: var(--accent-color);
+  box-shadow: 0 0 0 3px rgba(45, 74, 67, 0.15);
+}
+
+.custom-date-input.readonly {
+  opacity: 0.8;
+  cursor: not-allowed;
+  background-color: rgba(255, 255, 255, 0.02);
+}
+
+.custom-date-text {
+  font-family: var(--font-family);
+  font-size: 1rem;
+  color: var(--text-primary);
+  pointer-events: none;
+  flex-grow: 1;
+}
+
+.custom-date-input input[type="date"] {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  cursor: pointer;
+  z-index: 2;
+  padding: 0;
+  border: none;
+  background: transparent;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.custom-date-input.readonly input[type="date"] {
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+.custom-date-icon {
+  font-size: 1.1rem;
+  color: var(--text-secondary);
+  pointer-events: none;
+}
+
+
 
 

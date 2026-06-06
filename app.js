@@ -5,6 +5,29 @@ let state = {
   currentView: 'top' // 'top' または 'details'
 };
 
+// ローカル時間ベースの日付フォーマット・パースヘルパー
+function formatDateLocal(date) {
+  const d = new Date(date);
+  if (isNaN(d.getTime())) return '';
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+function parseDateLocal(dateStr) {
+  if (!dateStr) return null;
+  const parts = String(dateStr).split(/[-/]/);
+  if (parts.length === 3) {
+    const year = parseInt(parts[0], 10);
+    const month = parseInt(parts[1], 10) - 1;
+    const day = parseInt(parts[2], 10);
+    return new Date(year, month, day);
+  }
+  const d = new Date(dateStr);
+  return isNaN(d.getTime()) ? null : d;
+}
+
 // カテゴリ定義
 const CATEGORIES = [
   { id: 1, name: "1. 作成前の準備段階" },
@@ -38,7 +61,7 @@ document.addEventListener('DOMContentLoaded', () => {
   registerServiceWorker();
   render();
   setupEventListeners();
-  
+
   // 開始日のデフォルト設定と終了日の自動計算（28日分）
   initDateInputs();
 });
@@ -49,17 +72,17 @@ let formHolidays = [];
 // 開始日・終了日などの初期設定と自動計算連動
 function initDateInputs() {
   const startDateInput = document.getElementById('startDate');
-  
+
   // 今日以降の直近の日曜日を初期値にする
   const today = new Date();
   const nextSunday = new Date(today);
   const day = today.getDay();
   const diff = day === 0 ? 0 : 7 - day; // 今日が日曜日なら今日、そうでなければ次の日曜日
   nextSunday.setDate(today.getDate() + diff);
-  
-  const nextSundayStr = nextSunday.toISOString().split('T')[0];
+
+  const nextSundayStr = formatDateLocal(nextSunday);
   startDateInput.value = nextSundayStr;
-  
+
   // 初期計算と祝日の自動取得を実行
   updateFormCalculations(nextSundayStr);
 
@@ -72,199 +95,421 @@ function initDateInputs() {
 // フォームの自動計算項目（終了日、保存/確定期限、経推・会議日、祝日）を一括更新
 function updateFormCalculations(startDateVal) {
   if (!startDateVal) return;
-  const start = new Date(startDateVal);
-  
+  const start = parseDateLocal(startDateVal);
+  if (!start) return;
+
   // 1. 終了日 (27日後 = 開始日含め28日間)
   const end = new Date(start);
   end.setDate(start.getDate() + 27);
-  const endDateVal = end.toISOString().split('T')[0];
+  const endDateVal = formatDateLocal(end);
   document.getElementById('endDate').value = endDateVal;
-  
-  // 2. 保存入力期限 (36日前)
+
+  // 表示用テキストの更新 (曜日付き)
+  const startDateText = document.getElementById('startDateText');
+  if (startDateText) {
+    startDateText.innerText = formatDateJapanese(startDateVal);
+  }
+  const endDateText = document.getElementById('endDateText');
+  if (endDateText) {
+    endDateText.innerText = formatDateJapanese(endDateVal);
+  }
+
+  // 2. 期間の曜日付きテキスト表示の更新
+  const formattedStart = formatDateJapanese(startDateVal);
+  const formattedEnd = formatDateJapanese(endDateVal);
+  document.getElementById('periodDisplayTitle').innerText = `期間： ${formattedStart} 〜 ${formattedEnd}`;
+
+  // 3. 保存入力期限 (36日前)
   const saveDate = new Date(start);
   saveDate.setDate(start.getDate() - 36);
-  document.getElementById('saveDeadline').value = saveDate.toISOString().split('T')[0];
-  
-  // 3. 確定入力期限 (8日前)
+  document.getElementById('saveDeadline').value = formatDateLocal(saveDate);
+
+  // 4. 確定入力期限 (8日前)
   const confirmDate = new Date(start);
   confirmDate.setDate(start.getDate() - 8);
-  document.getElementById('confirmDeadline').value = confirmDate.toISOString().split('T')[0];
-  
-  // 4. 経推・会議日 (期間内の第2木曜日)
-  const meetingDateVal = getSecondThursday(startDateVal, endDateVal);
-  const meetingDateInput = document.getElementById('meetingDate');
-  if (meetingDateVal !== "なし") {
-    meetingDateInput.value = meetingDateVal;
-  } else {
-    meetingDateInput.value = ""; // なしの場合は空欄
-  }
-  
+  document.getElementById('confirmDeadline').value = formatDateLocal(confirmDate);
+
   // 5. 広報 (日付選択) - 初期状態は空欄
   document.getElementById('prDate').value = "";
-  
+  const prDateDisplay = document.getElementById('prDateDisplay');
+  if (prDateDisplay) prDateDisplay.value = "";
+  const prDateDisplayText = document.getElementById('prDateDisplayText');
+  if (prDateDisplayText) prDateDisplayText.innerText = "未設定";
+
   // 6. 祝日の自動取得
   formHolidays = getJapaneseHolidays(startDateVal, endDateVal);
-  renderFormHolidays();
 
-  // 曜日ラベルの更新
-  updateDayLabel('startDate', 'startDateDay');
-  updateDayLabel('endDate', 'endDateDay');
-  updateDayLabel('meetingDate', 'meetingDateDay');
-  updateDayLabel('prDate', 'prDateDay');
+  // 7. 会議日の週・曜日選択から日付を自動算出
+  calculateMeetingDate();
 }
 
-// 動的に入力値に応じた曜日をラベル横に表示する関数
-function updateDayLabel(inputId, labelId) {
-  const val = document.getElementById(inputId).value;
-  const label = document.getElementById(labelId);
-  if (!label) return;
-  if (!val) {
-    label.innerText = "";
-    return;
+// 指定年月の第N指定曜日の日付を特定するヘルパー
+function getMonthlyNthWeekday(year, month, nth, weekday) {
+  let count = 0;
+  // year, month, 1日をローカル時間として作成
+  const d = new Date(year, month, 1);
+  while (d.getMonth() === month) {
+    if (d.getDay() === weekday) {
+      count++;
+      if (count === nth) {
+        return new Date(d);
+      }
+    }
+    d.setDate(d.getDate() + 1);
   }
-  const date = new Date(val);
-  if (isNaN(date.getTime())) {
-    label.innerText = "";
-    return;
+  return null;
+}
+
+// 経推・会議日のセレクトボックス値から日付を自動算出する
+function calculateMeetingDate() {
+  const startDateVal = document.getElementById('startDate').value;
+  if (!startDateVal) return;
+
+  const start = parseDateLocal(startDateVal);
+  if (!start) return;
+  const end = new Date(start);
+  end.setDate(start.getDate() + 27);
+
+  const meetingSelect = document.getElementById('meetingSelect');
+  if (!meetingSelect) return;
+  const selectVal = meetingSelect.value;
+  const [nth, weekday] = selectVal.split('-').map(Number);
+
+  // 1. 開始日の月の第N指定曜日
+  let targetDate = getMonthlyNthWeekday(start.getFullYear(), start.getMonth(), nth, weekday);
+
+  // 期間内に入っているか
+  if (targetDate && targetDate >= start && targetDate <= end) {
+    document.getElementById('meetingDate').value = formatDateLocal(targetDate);
+  } else {
+    // 2. 入っていない場合、終了日の月の第N指定曜日
+    targetDate = getMonthlyNthWeekday(end.getFullYear(), end.getMonth(), nth, weekday);
+    if (targetDate && targetDate >= start && targetDate <= end) {
+      document.getElementById('meetingDate').value = formatDateLocal(targetDate);
+    } else {
+      // どちらも期間外なら空にする
+      document.getElementById('meetingDate').value = "";
+    }
   }
-  const dayNames = ['日', '月', '火', '水', '木', '金', '土'];
-  label.innerText = `(${dayNames[date.getDay()]})`;
+
+  syncMeetingAndPrEvents();
+}
+
+// カレンダー上で広報予定日を選択したときの処理
+function selectPrDate(dateStr) {
+  const prDateInput = document.getElementById('prDate');
+  const prDateDisplay = document.getElementById('prDateDisplay');
+  const prDateDisplayText = document.getElementById('prDateDisplayText');
+  // すでに選択されている日付をもう一度クリックしたら解除するトグル仕様
+  if (prDateInput.value === dateStr) {
+    prDateInput.value = "";
+    if (prDateDisplay) prDateDisplay.value = "";
+    if (prDateDisplayText) prDateDisplayText.innerText = "未設定";
+    showToast('広報予定日を解除しました。');
+  } else {
+    prDateInput.value = dateStr;
+    if (prDateDisplay) prDateDisplay.value = dateStr;
+    if (prDateDisplayText) prDateDisplayText.innerText = formatDateJapanese(dateStr);
+    showToast(`広報予定日を ${formatDateJapanese(dateStr)} に設定しました！`);
+  }
+  syncMeetingAndPrEvents();
+}
+
+// 会議日・広報日のイベントリスト(formHolidays)への自動同期処理
+function syncMeetingAndPrEvents() {
+  const startDateVal = document.getElementById('startDate').value;
+  if (!startDateVal) return;
+
+  // 既存の自動追加イベント（【会議】および【広報】で始まるもの）を除去
+  formHolidays = formHolidays.filter(h => !h.name.startsWith("【会議】") && !h.name.startsWith("【広報】"));
+
+  // 新しい会議日の登録
+  const meetingVal = document.getElementById('meetingDate').value;
+  if (meetingVal) {
+    formHolidays.push({
+      date: meetingVal,
+      name: "【会議】経推・会議日"
+    });
+  }
+
+  // 新しい広報日の登録
+  const prVal = document.getElementById('prDate').value;
+  if (prVal) {
+    formHolidays.push({
+      date: prVal,
+      name: "【広報】広報"
+    });
+  }
+
+  // 日付順にソート
+  formHolidays.sort((a, b) => parseDateLocal(a.date) - parseDateLocal(b.date));
+
+  // リストとカレンダーの再描画
+  renderFormHolidays();
+  renderFormCalendar();
 }
 
 // 登録フォーム内の祝日一覧の描画
-function renderFormHolidays() {
-  const container = document.getElementById('formHolidaysContainer');
-  if (!container) return;
-  container.innerHTML = '';
-  
-  if (formHolidays.length === 0) {
-    container.innerHTML = '<span style="font-size:0.8rem; color:var(--text-secondary);">祝日・イベントはありません</span>';
-    return;
-  }
-  
-  const startDateVal = document.getElementById('startDate').value;
+  function renderFormHolidays() {
+    const container = document.getElementById('formHolidaysContainer');
+    if (!container) return;
+    container.innerHTML = '';
 
-  formHolidays.forEach((h, index) => {
-    const isCustom = h.name === "振替休日" || h.name === "国民の休日" ? false : !["元日","成人の日","建国記念の日","天皇誕生日","春分の日","昭和の日","憲法記念日","みどりの日","こどもの日","海の日","山の日","敬老の日","秋分の日","スポーツの日","文化の日","勤労感謝の日"].includes(h.name);
-    
-    const badge = document.createElement('div');
-    badge.className = `holiday-badge ${isCustom ? 'custom-event' : ''}`;
-    
-    const d = new Date(h.date);
-    const dateStr = `${d.getMonth()+1}/${d.getDate()}`;
-    const hWeek = getWeekMarker(h.date, startDateVal);
-    
-    badge.innerHTML = `
+    if (formHolidays.length === 0) {
+      container.innerHTML = '<span style="font-size:0.8rem; color:var(--text-secondary);">祝日・イベントはありません</span>';
+      return;
+    }
+
+    const startDateVal = document.getElementById('startDate').value;
+
+    formHolidays.forEach((h, index) => {
+      const isCustom = h.name === "振替休日" || h.name === "国民の休日" ? false : !["元日", "成人の日", "建国記念の日", "天皇誕生日", "春分の日", "昭和の日", "憲法記念日", "みどりの日", "こどもの日", "海の日", "山の日", "敬老の日", "秋分の日", "スポーツの日", "文化の日", "勤労感謝の日"].includes(h.name);
+
+      const badge = document.createElement('div');
+      badge.className = `holiday-badge ${isCustom ? 'custom-event' : ''}`;
+
+      const d = parseDateLocal(h.date);
+      if (!d) return;
+      const dateStr = `${d.getMonth() + 1}/${d.getDate()}`;
+      const hWeek = getWeekMarker(h.date, startDateVal);
+
+      badge.innerHTML = `
       <span>${dateStr} ${escapeHtml(h.name)}${hWeek}</span>
       <button type="button" class="holiday-badge-delete" data-index="${index}" title="削除">✕</button>
     `;
-    
-    badge.querySelector('.holiday-badge-delete').addEventListener('click', (e) => {
-      e.stopPropagation();
-      formHolidays.splice(index, 1);
-      renderFormHolidays();
-    });
-    
-    container.appendChild(badge);
-  });
-}
 
-// データの読み込み
-function loadData() {
-  const savedData = localStorage.getItem('shift_manager_data');
-  if (savedData) {
-    try {
-      state.periods = JSON.parse(savedData);
-      
-      // 古いデータ形式の互換性維持とマイグレーション
-      state.periods.forEach(period => {
-        const start = new Date(period.startDate);
-        
-        if (!period.saveDeadline) {
-          const saveDate = new Date(start);
-          saveDate.setDate(start.getDate() - 36);
-          period.saveDeadline = saveDate.toISOString().split('T')[0];
-        }
-        if (!period.confirmDeadline) {
-          const confirmDate = new Date(start);
-          confirmDate.setDate(start.getDate() - 8);
-          period.confirmDeadline = confirmDate.toISOString().split('T')[0];
-        }
-        if (period.meetingDate === undefined) {
-          period.meetingDate = getSecondThursday(period.startDate, period.endDate);
-        }
-        if (period.prDate === undefined) {
-          period.prDate = "";
-        }
-        if (!period.holidays) {
-          period.holidays = getJapaneseHolidays(period.startDate, period.endDate);
-        }
+      badge.querySelector('.holiday-badge-delete').addEventListener('click', (e) => {
+        e.stopPropagation();
+        formHolidays.splice(index, 1);
+        renderFormHolidays();
+        renderFormCalendar();
       });
-      saveData(); // アップグレードしたデータを保存
-    } catch (e) {
-      console.error('データの解析に失敗しました。初期化します。', e);
-      state.periods = [];
+
+      container.appendChild(badge);
+    });
+  }
+
+  // 登録フォーム内の28日間をハイライトするカレンダーUIの描画
+  function renderFormCalendar() {
+    const container = document.getElementById('formCalendarContainer');
+    if (!container) return;
+    container.innerHTML = '';
+
+    const startDateVal = document.getElementById('startDate').value;
+    if (!startDateVal) return;
+
+    const start = parseDateLocal(startDateVal);
+    if (!start) return;
+
+    const end = new Date(start);
+    end.setDate(start.getDate() + 27); // 28日間
+
+    // 表示する月（開始日の月、および終了日が別月なら終了日の月も）
+    let rangeTitle = `${start.getFullYear()}年 ${start.getMonth() + 1}月`;
+    if (start.getMonth() !== end.getMonth() || start.getFullYear() !== end.getFullYear()) {
+      rangeTitle += ` - ${end.getMonth() + 1}月`;
     }
-  } else {
-    // 初回起動時のサンプルデータ作成
-    const today = new Date();
-    const nextSunday = new Date(today);
-    const day = today.getDay();
-    const diff = day === 0 ? 0 : 7 - day;
-    nextSunday.setDate(today.getDate() + diff);
-    const startStr = nextSunday.toISOString().split('T')[0];
-    
-    // サンプルの終了日（27日後）
-    const end = new Date(nextSunday);
-    end.setDate(nextSunday.getDate() + 27);
-    const endStr = end.toISOString().split('T')[0];
-    
-    // 期限の計算
-    const saveDate = new Date(nextSunday);
-    saveDate.setDate(nextSunday.getDate() - 36);
-    const confirmDate = new Date(nextSunday);
-    confirmDate.setDate(nextSunday.getDate() - 8);
-    
-    state.periods = [
-      {
-        id: Date.now(),
-        startDate: startStr,
-        endDate: endStr,
-        saveDeadline: saveDate.toISOString().split('T')[0],
-        confirmDeadline: confirmDate.toISOString().split('T')[0],
-        meetingDate: getSecondThursday(startStr, endStr),
-        prDate: "",
-        holidays: getJapaneseHolidays(startStr, endStr),
-        tasks: DEFAULT_TASKS_TEMPLATE.map((t, idx) => ({
-          id: Date.now() + idx,
-          categoryId: t.categoryId,
-          text: t.text,
-          checked: t.categoryId === 1 && idx === 0 // 最初の項目だけ完了にしておく
-        }))
+
+    const titleEl = document.createElement('div');
+    titleEl.className = 'calendar-month-title';
+    titleEl.innerText = rangeTitle;
+    container.appendChild(titleEl);
+
+    const daysHeader = document.createElement('div');
+    daysHeader.className = 'calendar-week-header';
+    daysHeader.style.display = 'grid';
+    daysHeader.style.gridTemplateColumns = '45px repeat(7, 1fr)';
+    ['週', '日', '月', '火', '水', '木', '金', '土'].forEach(dayName => {
+      const dayNameEl = document.createElement('div');
+      dayNameEl.innerText = dayName;
+      daysHeader.appendChild(dayNameEl);
+    });
+    container.appendChild(daysHeader);
+
+    const daysGrid = document.createElement('div');
+    daysGrid.className = 'calendar-days-grid';
+    daysGrid.style.display = 'grid';
+    daysGrid.style.gridTemplateColumns = '45px repeat(7, 1fr)';
+
+    for (let i = 0; i < 28; i++) {
+      // 7日ごとに週ラベルを挿入
+      if (i % 7 === 0) {
+        const weekLabel = document.createElement('div');
+        weekLabel.className = 'calendar-week-label';
+        weekLabel.style.display = 'flex';
+        weekLabel.style.alignItems = 'center';
+        weekLabel.style.justifyContent = 'center';
+        weekLabel.style.fontSize = '0.75rem';
+        weekLabel.style.fontWeight = 'bold';
+        weekLabel.style.color = 'var(--text-secondary)';
+        weekLabel.innerText = `第${Math.floor(i / 7) + 1}週`;
+        daysGrid.appendChild(weekLabel);
       }
-    ];
-    saveData();
+
+      const current = new Date(start);
+      current.setDate(start.getDate() + i);
+      const currentStr = formatDateLocal(current);
+
+      const dayEl = document.createElement('div');
+      dayEl.className = 'calendar-day-cell in-period';
+      dayEl.dataset.date = currentStr;
+
+      // 表示する日付テキスト
+      // i === 0 (最初の日)、またはその月の1日には月を表示する
+      const isMonthStart = current.getDate() === 1;
+      const dateText = document.createElement('span');
+      dateText.className = 'day-number';
+      if (i === 0 || isMonthStart) {
+        dateText.innerText = `${current.getMonth() + 1}/${current.getDate()}`;
+        dateText.style.fontSize = '0.7rem';
+      } else {
+        dateText.innerText = current.getDate();
+      }
+      dayEl.appendChild(dateText);
+
+      if (i === 0) dayEl.classList.add('period-start');
+      if (i === 27) dayEl.classList.add('period-end');
+
+      // イベントマッピング
+      // 1. 会議日
+      const meetingVal = document.getElementById('meetingDate').value;
+      if (meetingVal === currentStr) {
+        dayEl.classList.add('event-meeting');
+        const badge = document.createElement('span');
+        badge.className = 'event-tag tag-meeting';
+        badge.innerText = `会議${getWeekMarker(currentStr, startDateVal)}`;
+        dayEl.appendChild(badge);
+      }
+
+      // 2. 広報日
+      const prVal = document.getElementById('prDate').value;
+      if (prVal === currentStr) {
+        dayEl.classList.add('event-pr');
+        const badge = document.createElement('span');
+        badge.className = 'event-tag tag-pr';
+        badge.innerText = `広報${getWeekMarker(currentStr, startDateVal)}`;
+        dayEl.appendChild(badge);
+      }
+
+      // 3. 祝日 (会議日・広報以外の純粋な祝日・イベント)
+      const isHoliday = formHolidays.find(h => h.date === currentStr && !h.name.startsWith("【会議】") && !h.name.startsWith("【広報】"));
+      if (isHoliday) {
+        dayEl.classList.add('event-holiday');
+        const badge = document.createElement('span');
+        badge.className = 'event-tag tag-holiday';
+        badge.innerText = isHoliday.name.slice(0, 3);
+        dayEl.appendChild(badge);
+      }
+
+      // マスをクリックした際に広報日を選択する
+      dayEl.addEventListener('click', () => {
+        selectPrDate(currentStr);
+      });
+
+      daysGrid.appendChild(dayEl);
+    }
+
+    container.appendChild(daysGrid);
   }
-}
 
-// データの保存
-function saveData() {
-  localStorage.setItem('shift_manager_data', JSON.stringify(state.periods));
-}
+  // データの読み込み
+  function loadData() {
+    const savedData = localStorage.getItem('shift_manager_data');
+    if (savedData) {
+      try {
+        state.periods = JSON.parse(savedData);
 
-// 画面描画
-function render() {
-  // ビューの切り替え
-  document.getElementById('topView').classList.toggle('active', state.currentView === 'top');
-  document.getElementById('detailsView').classList.toggle('active', state.currentView === 'details');
+        // 古いデータ形式の互換性維持とマイグレーション
+        state.periods.forEach(period => {
+          const start = parseDateLocal(period.startDate);
+          if (!start) return;
 
-  if (state.currentView === 'top') {
-    renderTopView();
-  } else if (state.currentView === 'details') {
-    renderDetailsView();
+          if (!period.saveDeadline) {
+            const saveDate = new Date(start);
+            saveDate.setDate(start.getDate() - 36);
+            period.saveDeadline = formatDateLocal(saveDate);
+          }
+          if (!period.confirmDeadline) {
+            const confirmDate = new Date(start);
+            confirmDate.setDate(start.getDate() - 8);
+            period.confirmDeadline = formatDateLocal(confirmDate);
+          }
+          if (period.meetingDate === undefined) {
+            period.meetingDate = getSecondThursday(period.startDate, period.endDate);
+          }
+          if (period.prDate === undefined) {
+            period.prDate = "";
+          }
+          if (!period.holidays) {
+            period.holidays = getJapaneseHolidays(period.startDate, period.endDate);
+          }
+        });
+        saveData(); // アップグレードしたデータを保存
+      } catch (e) {
+        console.error('データの解析に失敗しました。初期化します。', e);
+        state.periods = [];
+      }
+    } else {
+      // 初回起動時のサンプルデータ作成
+      const today = new Date();
+      const nextSunday = new Date(today);
+      const day = today.getDay();
+      const diff = day === 0 ? 0 : 7 - day;
+      nextSunday.setDate(today.getDate() + diff);
+      const startStr = formatDateLocal(nextSunday);
+
+      // サンプルの終了日（27日後）
+      const end = new Date(nextSunday);
+      end.setDate(nextSunday.getDate() + 27);
+      const endStr = formatDateLocal(end);
+
+      // 期限の計算
+      const saveDate = new Date(nextSunday);
+      saveDate.setDate(nextSunday.getDate() - 36);
+      const confirmDate = new Date(nextSunday);
+      confirmDate.setDate(nextSunday.getDate() - 8);
+
+      state.periods = [
+        {
+          id: Date.now(),
+          startDate: startStr,
+          endDate: endStr,
+          saveDeadline: formatDateLocal(saveDate),
+          confirmDeadline: formatDateLocal(confirmDate),
+          meetingDate: getSecondThursday(startStr, endStr),
+          prDate: "",
+          holidays: getJapaneseHolidays(startStr, endStr),
+          tasks: DEFAULT_TASKS_TEMPLATE.map((t, idx) => ({
+            id: Date.now() + idx,
+            categoryId: t.categoryId,
+            text: t.text,
+            checked: t.categoryId === 1 && idx === 0 // 最初の項目だけ完了にしておく
+          }))
+        }
+      ];
+      saveData();
+    }
   }
-}
 
+  // データの保存
+  function saveData() {
+    localStorage.setItem('shift_manager_data', JSON.stringify(state.periods));
+  }
+
+  // 画面描画
+  function render() {
+    // ビューの切り替え
+    document.getElementById('topView').classList.toggle('active', state.currentView === 'top');
+    document.getElementById('detailsView').classList.toggle('active', state.currentView === 'details');
+
+    if (state.currentView === 'top') {
+      renderTopView();
+    } else if (state.currentView === 'details') {
+      renderDetailsView();
+    }
+  }
+
+  // トップ画面のレンダリング
 // トップ画面のレンダリング
 function renderTopView() {
   const periodListContainer = document.getElementById('periodList');
@@ -281,49 +526,49 @@ function renderTopView() {
   }
 
   // 日付順にソート（開始日順）
-  const sortedPeriods = [...state.periods].sort((a, b) => new Date(a.startDate) - new Date(b.startDate));
+  const sortedPeriods = [...state.periods].sort((a, b) => parseDateLocal(a.startDate) - parseDateLocal(b.startDate));
 
-  sortedPeriods.forEach(period => {
-    const totalTasks = period.tasks.length;
-    const completedTasks = period.tasks.filter(t => t.checked).length;
-    const progressPercent = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
+    sortedPeriods.forEach(period => {
+      const totalTasks = period.tasks.length;
+      const completedTasks = period.tasks.filter(t => t.checked).length;
+      const progressPercent = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
 
-    const formattedStart = formatDateJapanese(period.startDate);
-    const formattedEnd = formatDateJapanese(period.endDate);
+      const formattedStart = formatDateJapanese(period.startDate);
+      const formattedEnd = formatDateJapanese(period.endDate);
 
-    const saveDeadlineStr = formatDateJapanese(period.saveDeadline);
-    const confirmDeadlineStr = formatDateJapanese(period.confirmDeadline);
-    
-    // 会議日と広報日に週番号マーカーを付与
-    const meetingWeek = getWeekMarker(period.meetingDate, period.startDate);
-    const meetingDateStr = period.meetingDate && period.meetingDate !== "なし" 
-      ? formatDateJapanese(period.meetingDate) + meetingWeek 
-      : "なし";
-      
-    const prWeek = getWeekMarker(period.prDate, period.startDate);
-    const prDateStr = period.prDate 
-      ? formatDateJapanese(period.prDate) + prWeek 
-      : "未設定";
+      const saveDeadlineStr = formatDateJapanese(period.saveDeadline);
+      const confirmDeadlineStr = formatDateJapanese(period.confirmDeadline);
 
-    // 祝日ミニタグの生成（週番号を追加）
-    let holidaysHtml = '';
-    if (period.holidays && period.holidays.length > 0) {
-      holidaysHtml = `
+      // 会議日と広報日に週番号マーカーを付与
+      const meetingWeek = getWeekMarker(period.meetingDate, period.startDate);
+      const meetingDateStr = period.meetingDate && period.meetingDate !== "なし"
+        ? formatDateJapanese(period.meetingDate) + meetingWeek
+        : "なし";
+
+      const prWeek = getWeekMarker(period.prDate, period.startDate);
+      const prDateStr = period.prDate
+        ? formatDateJapanese(period.prDate) + prWeek
+        : "未設定";
+
+      // 祝日ミニタグの生成（週番号を追加）
+      let holidaysHtml = '';
+      if (period.holidays && period.holidays.length > 0) {
+        holidaysHtml = `
         <div class="period-card-holidays">
           ${period.holidays.slice(0, 5).map(h => {
-            const hWeek = getWeekMarker(h.date, period.startDate);
-            const d = new Date(h.date);
-            const label = `${d.getMonth()+1}/${d.getDate()}${escapeHtml(h.name)}${hWeek}`;
-            return `<span class="holiday-mini-tag" title="${h.date}">${label}</span>`;
-          }).join('')}
+          const hWeek = getWeekMarker(h.date, period.startDate);
+          const d = new Date(h.date);
+          const label = `${d.getMonth() + 1}/${d.getDate()}${escapeHtml(h.name)}${hWeek}`;
+          return `<span class="holiday-mini-tag" title="${h.date}">${label}</span>`;
+        }).join('')}
           ${period.holidays.length > 5 ? `<span class="holiday-mini-tag" style="background:rgba(255,255,255,0.05); border-color:var(--border-color); color:var(--text-secondary);">他 ${period.holidays.length - 5}件</span>` : ''}
         </div>
       `;
-    }
+      }
 
-    const card = document.createElement('div');
-    card.className = 'period-card';
-    card.innerHTML = `
+      const card = document.createElement('div');
+      card.className = 'period-card';
+      card.innerHTML = `
       <div class="period-card-header">
         <div class="period-title">📅 ${formattedStart} 〜 ${formattedEnd}</div>
         <div class="period-stats">${completedTasks}/${totalTasks} 完了</div>
@@ -362,98 +607,98 @@ function renderTopView() {
       </div>
     `;
 
-    // カード本体をタップしたら詳細へ
-    card.addEventListener('click', (e) => {
-      if (e.target.closest('.delete-period-btn')) {
-        return;
-      }
-      navigateToDetails(period.id);
-    });
-
-    // 削除ボタンのイベント
-    card.querySelector('.delete-period-btn').addEventListener('click', (e) => {
-      e.stopPropagation();
-      if (confirm(`この期間（${formattedStart} 〜 ${formattedEnd}）の作成工程データをすべて削除しますか？`)) {
-        deletePeriod(period.id);
-      }
-    });
-
-    periodListContainer.appendChild(card);
-  });
-}
-
-// 詳細画面（グループ化されたチェックリスト）のレンダリング
-function renderDetailsView() {
-  const period = state.periods.find(p => p.id === state.activePeriodId);
-  if (!period) {
-    navigateToTop();
-    return;
-  }
-
-  const formattedStart = formatDateJapanese(period.startDate);
-  const formattedEnd = formatDateJapanese(period.endDate);
-  
-  // タイトル設定
-  document.getElementById('detailsTitle').innerText = `${formattedStart} 〜 ${formattedEnd} 勤務指定表作成`;
-
-  // 祝日・イベント一覧の描画
-  const detailsHolidaysList = document.getElementById('detailsHolidaysList');
-  if (detailsHolidaysList) {
-    detailsHolidaysList.innerHTML = '';
-    if (!period.holidays || period.holidays.length === 0) {
-      detailsHolidaysList.innerHTML = '<span style="font-size:0.85rem; color:var(--text-secondary);">祝日・イベントはありません。</span>';
-    } else {
-      period.holidays.forEach((h, idx) => {
-        const isCustom = h.name === "振替休日" || h.name === "国民の休日" ? false : !["元日","成人の日","建国記念の日","天皇誕生日","春分の日","昭和の日","憲法記念日","みどりの日","こどもの日","海の日","山の日","敬老の日","秋分の日","スポーツの日","文化の日","勤労感謝の日"].includes(h.name);
-        const badge = document.createElement('div');
-        badge.className = `holiday-badge ${isCustom ? 'custom-event' : ''}`;
-        
-        const d = new Date(h.date);
-        const dateStr = `${d.getMonth()+1}/${d.getDate()}`;
-        const hWeek = getWeekMarker(h.date, period.startDate);
-        
-        badge.innerHTML = `
-          <span>${dateStr} ${escapeHtml(h.name)}${hWeek}</span>
-          <button type="button" class="holiday-badge-delete" title="削除">✕</button>
-        `;
-        
-        badge.querySelector('.holiday-badge-delete').addEventListener('click', (e) => {
-          e.stopPropagation();
-          deleteHoliday(period.id, idx);
-        });
-        
-        detailsHolidaysList.appendChild(badge);
+      // カード本体をタップしたら詳細へ
+      card.addEventListener('click', (e) => {
+        if (e.target.closest('.delete-period-btn')) {
+          return;
+        }
+        navigateToDetails(period.id);
       });
-    }
+
+      // 削除ボタンのイベント
+      card.querySelector('.delete-period-btn').addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (confirm(`この期間（${formattedStart} 〜 ${formattedEnd}）の作成工程データをすべて削除しますか？`)) {
+          deletePeriod(period.id);
+        }
+      });
+
+      periodListContainer.appendChild(card);
+    });
   }
 
-  const checklistContainer = document.getElementById('checklist');
-  checklistContainer.innerHTML = '';
-
-  // カテゴリごとにタスクをグループ分けして描画
-  CATEGORIES.forEach(category => {
-    const categoryTasks = period.tasks.filter(t => t.categoryId === category.id);
-    
-    // グループヘッダーの作成
-    const groupHeader = document.createElement('div');
-    groupHeader.className = 'category-group-header';
-    groupHeader.innerText = category.name;
-    checklistContainer.appendChild(groupHeader);
-
-    // そのカテゴリにタスクがない場合の表示
-    if (categoryTasks.length === 0) {
-      const emptyMsg = document.createElement('div');
-      emptyMsg.className = 'category-empty-msg';
-      emptyMsg.innerText = 'この工程のチェック項目はありません。';
-      checklistContainer.appendChild(emptyMsg);
+  // 詳細画面（グループ化されたチェックリスト）のレンダリング
+  function renderDetailsView() {
+    const period = state.periods.find(p => p.id === state.activePeriodId);
+    if (!period) {
+      navigateToTop();
       return;
     }
 
-    // タスクの描画
-    categoryTasks.forEach(task => {
-      const item = document.createElement('div');
-      item.className = `checklist-item ${task.checked ? 'checked' : ''}`;
-      item.innerHTML = `
+    const formattedStart = formatDateJapanese(period.startDate);
+    const formattedEnd = formatDateJapanese(period.endDate);
+
+    // タイトル設定
+    document.getElementById('detailsTitle').innerText = `${formattedStart} 〜 ${formattedEnd} 勤務指定表作成`;
+
+    // 祝日・イベント一覧の描画
+    const detailsHolidaysList = document.getElementById('detailsHolidaysList');
+    if (detailsHolidaysList) {
+      detailsHolidaysList.innerHTML = '';
+      if (!period.holidays || period.holidays.length === 0) {
+        detailsHolidaysList.innerHTML = '<span style="font-size:0.85rem; color:var(--text-secondary);">祝日・イベントはありません。</span>';
+      } else {
+        period.holidays.forEach((h, idx) => {
+          const isCustom = h.name === "振替休日" || h.name === "国民の休日" ? false : !["元日", "成人の日", "建国記念の日", "天皇誕生日", "春分の日", "昭和の日", "憲法記念日", "みどりの日", "こどもの日", "海の日", "山の日", "敬老の日", "秋分の日", "スポーツの日", "文化の日", "勤労感謝の日"].includes(h.name);
+          const badge = document.createElement('div');
+          badge.className = `holiday-badge ${isCustom ? 'custom-event' : ''}`;
+
+          const d = new Date(h.date);
+          const dateStr = `${d.getMonth() + 1}/${d.getDate()}`;
+          const hWeek = getWeekMarker(h.date, period.startDate);
+
+          badge.innerHTML = `
+          <span>${dateStr} ${escapeHtml(h.name)}${hWeek}</span>
+          <button type="button" class="holiday-badge-delete" title="削除">✕</button>
+        `;
+
+          badge.querySelector('.holiday-badge-delete').addEventListener('click', (e) => {
+            e.stopPropagation();
+            deleteHoliday(period.id, idx);
+          });
+
+          detailsHolidaysList.appendChild(badge);
+        });
+      }
+    }
+
+    const checklistContainer = document.getElementById('checklist');
+    checklistContainer.innerHTML = '';
+
+    // カテゴリごとにタスクをグループ分けして描画
+    CATEGORIES.forEach(category => {
+      const categoryTasks = period.tasks.filter(t => t.categoryId === category.id);
+
+      // グループヘッダーの作成
+      const groupHeader = document.createElement('div');
+      groupHeader.className = 'category-group-header';
+      groupHeader.innerText = category.name;
+      checklistContainer.appendChild(groupHeader);
+
+      // そのカテゴリにタスクがない場合の表示
+      if (categoryTasks.length === 0) {
+        const emptyMsg = document.createElement('div');
+        emptyMsg.className = 'category-empty-msg';
+        emptyMsg.innerText = 'この工程のチェック項目はありません。';
+        checklistContainer.appendChild(emptyMsg);
+        return;
+      }
+
+      // タスクの描画
+      categoryTasks.forEach(task => {
+        const item = document.createElement('div');
+        item.className = `checklist-item ${task.checked ? 'checked' : ''}`;
+        item.innerHTML = `
         <div class="checklist-item-left">
           <div class="custom-checkbox">
             <i>✓</i>
@@ -465,488 +710,519 @@ function renderDetailsView() {
         </button>
       `;
 
-      // チェック切り替えイベント
-      item.querySelector('.checklist-item-left').addEventListener('click', () => {
-        toggleTask(period.id, task.id);
+        // チェック切り替えイベント
+        item.querySelector('.checklist-item-left').addEventListener('click', () => {
+          toggleTask(period.id, task.id);
+        });
+
+        // 項目削除イベント
+        item.querySelector('.delete-task-btn').addEventListener('click', () => {
+          deleteTask(period.id, task.id);
+        });
+
+        checklistContainer.appendChild(item);
       });
+    });
+  }
 
-      // 項目削除イベント
-      item.querySelector('.delete-task-btn').addEventListener('click', () => {
-        deleteTask(period.id, task.id);
+  // 日付を「〇月〇日(曜日)」フォーマットに変換
+  function formatDateJapanese(dateString) {
+    if (!dateString) return '';
+    const date = parseDateLocal(dateString);
+    if (!date || isNaN(date.getTime())) return dateString; // "なし" などの文字列はそのまま返す
+
+    const y = date.getFullYear();
+    const m = String(date.getMonth() + 1).padStart(2, '0');
+    const d = String(date.getDate()).padStart(2, '0');
+    const dayNames = ['日', '月', '火', '水', '木', '金', '土'];
+    const dayOf = dayNames[date.getDay()];
+
+    return `${y}/${m}/${d}(${dayOf})`;
+  }
+
+  // 開始日（日曜日始まり）から何週目にあるかを判定し、丸数字を返す関数
+  function getWeekMarker(targetDateStr, startDateStr) {
+    if (!targetDateStr || !startDateStr || targetDateStr === "なし") return "";
+    const target = parseDateLocal(targetDateStr);
+    const start = parseDateLocal(startDateStr);
+    if (!target || !start) return "";
+
+    const diffTime = target - start;
+    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+
+    if (diffDays >= 0 && diffDays < 28) {
+      const weekNum = Math.floor(diffDays / 7) + 1;
+      const markers = ["①", "②", "③", "④"];
+      return markers[weekNum - 1] || "";
+    }
+    return "";
+  }
+
+  // HTMLエスケープ処理
+  function escapeHtml(str) {
+    return str
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#039;");
+  }
+
+  // 画面遷移ロジック
+  function navigateToDetails(periodId) {
+    state.activePeriodId = periodId;
+    state.currentView = 'details';
+    render();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  function navigateToTop() {
+    state.activePeriodId = null;
+    state.currentView = 'top';
+    render();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  // 期間の追加
+  function addPeriod(startDate, endDate, saveDeadline, confirmDeadline, meetingDate, prDate) {
+    console.log("addPeriod inputs:", { startDate, endDate, saveDeadline, confirmDeadline, meetingDate, prDate });
+    if (!startDate || !endDate) {
+      showToast('開始日と終了日を入力してください。');
+      return;
+    }
+
+    // テンプレートタスクをコピーして新規期間を追加
+    const newPeriod = {
+      id: Date.now(),
+      startDate: startDate,
+      endDate: endDate,
+      saveDeadline: saveDeadline,
+      confirmDeadline: confirmDeadline,
+      meetingDate: meetingDate || "なし",
+      prDate: prDate || "",
+      holidays: [...formHolidays],
+      tasks: DEFAULT_TASKS_TEMPLATE.map((t, idx) => ({
+        id: Date.now() + idx + 100,
+        categoryId: t.categoryId,
+        text: t.text,
+        checked: false
+      }))
+    };
+
+    state.periods.push(newPeriod);
+    saveData();
+
+    // フォーム用一時データの初期化
+    formHolidays = [];
+
+    render();
+    showToast('4週間の勤務期間を追加しました！');
+  }
+
+  // 祝日の追加（特定の期間データに対して）
+  function addHoliday(periodId, date, name) {
+    if (!date || !name.trim()) {
+      showToast('日付と祝日・イベント名を入力してください。');
+      return;
+    }
+
+    const period = state.periods.find(p => p.id === periodId);
+    if (period) {
+      if (!period.holidays) period.holidays = [];
+      period.holidays.push({
+        date: date,
+        name: name.trim()
       });
-
-      checklistContainer.appendChild(item);
-    });
-  });
-}
-
-// 日付を「〇月〇日(曜日)」フォーマットに変換
-function formatDateJapanese(dateString) {
-  if (!dateString) return '';
-  const date = new Date(dateString);
-  if (isNaN(date.getTime())) return dateString; // "なし" などの文字列はそのまま返す
-  
-  const m = date.getMonth() + 1;
-  const d = date.getDate();
-  const dayNames = ['日', '月', '火', '水', '木', '金', '土'];
-  const dayOf = dayNames[date.getDay()];
-  
-  return `${m}月${d}日(${dayOf})`;
-}
-
-// 開始日（日曜日始まり）から何週目にあるかを判定し、丸数字を返す関数
-function getWeekMarker(targetDateStr, startDateStr) {
-  if (!targetDateStr || !startDateStr || targetDateStr === "なし") return "";
-  const target = new Date(targetDateStr);
-  const start = new Date(startDateStr);
-  if (isNaN(target.getTime()) || isNaN(start.getTime())) return "";
-  
-  // 日付部分のみで差分を計算（時間帯のズレによる誤差を防ぐ）
-  const tStr = targetDateStr.split('T')[0];
-  const sStr = startDateStr.split('T')[0];
-  const tDate = new Date(tStr);
-  const sDate = new Date(sStr);
-  
-  const diffTime = tDate - sDate;
-  const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-  
-  if (diffDays >= 0 && diffDays < 28) {
-    const weekNum = Math.floor(diffDays / 7) + 1;
-    const markers = ["①", "②", "③", "④"];
-    return markers[weekNum - 1] || "";
-  }
-  return "";
-}
-
-// HTMLエスケープ処理
-function escapeHtml(str) {
-  return str
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#039;");
-}
-
-// 画面遷移ロジック
-function navigateToDetails(periodId) {
-  state.activePeriodId = periodId;
-  state.currentView = 'details';
-  render();
-  window.scrollTo({ top: 0, behavior: 'smooth' });
-}
-
-function navigateToTop() {
-  state.activePeriodId = null;
-  state.currentView = 'top';
-  render();
-  window.scrollTo({ top: 0, behavior: 'smooth' });
-}
-
-// 期間の追加
-function addPeriod(startDate, endDate, saveDeadline, confirmDeadline, meetingDate, prDate) {
-  console.log("addPeriod inputs:", { startDate, endDate, saveDeadline, confirmDeadline, meetingDate, prDate });
-  if (!startDate || !endDate) {
-    showToast('開始日と終了日を入力してください。');
-    return;
-  }
-
-  // テンプレートタスクをコピーして新規期間を追加
-  const newPeriod = {
-    id: Date.now(),
-    startDate: startDate,
-    endDate: endDate,
-    saveDeadline: saveDeadline,
-    confirmDeadline: confirmDeadline,
-    meetingDate: meetingDate || "なし",
-    prDate: prDate || "",
-    holidays: [...formHolidays],
-    tasks: DEFAULT_TASKS_TEMPLATE.map((t, idx) => ({
-      id: Date.now() + idx + 100,
-      categoryId: t.categoryId,
-      text: t.text,
-      checked: false
-    }))
-  };
-
-  state.periods.push(newPeriod);
-  saveData();
-  
-  // フォーム用一時データの初期化
-  formHolidays = [];
-  
-  render();
-  showToast('4週間の勤務期間を追加しました！');
-}
-
-// 祝日の追加（特定の期間データに対して）
-function addHoliday(periodId, date, name) {
-  if (!date || !name.trim()) {
-    showToast('日付と祝日・イベント名を入力してください。');
-    return;
-  }
-
-  const period = state.periods.find(p => p.id === periodId);
-  if (period) {
-    if (!period.holidays) period.holidays = [];
-    period.holidays.push({
-      date: date,
-      name: name.trim()
-    });
-    // 日付順にソート
-    period.holidays.sort((a, b) => new Date(a.date) - new Date(b.date));
-    saveData();
-    render();
-    showToast('祝日・イベントを追加しました！');
-  }
-}
-
-// 祝日の削除（特定の期間データから）
-function deleteHoliday(periodId, holidayIndex) {
-  const period = state.periods.find(p => p.id === periodId);
-  if (period && period.holidays) {
-    period.holidays.splice(holidayIndex, 1);
-    saveData();
-    render();
-    showToast('祝日・イベントを削除しました。');
-  }
-}
-
-// 期間の削除
-function deletePeriod(id) {
-  state.periods = state.periods.filter(p => p.id !== id);
-  saveData();
-  render();
-  showToast('期間を削除しました。');
-}
-
-// タスクの完了トグル
-function toggleTask(periodId, taskId) {
-  const period = state.periods.find(p => p.id === periodId);
-  if (period) {
-    const task = period.tasks.find(t => t.id === taskId);
-    if (task) {
-      task.checked = !task.checked;
+      // 日付順にソート
+      period.holidays.sort((a, b) => parseDateLocal(a.date) - parseDateLocal(b.date));
       saveData();
       render();
+      showToast('祝日・イベントを追加しました！');
     }
   }
-}
 
-// タスクの追加
-function addTask(periodId, text, categoryId) {
-  if (!text.trim()) {
-    showToast('作業項目を入力してください。');
-    return;
-  }
-
-  const period = state.periods.find(p => p.id === periodId);
-  if (period) {
-    const newTask = {
-      id: Date.now(),
-      categoryId: parseInt(categoryId, 10),
-      text: text.trim(),
-      checked: false
-    };
-    period.tasks.push(newTask);
-    saveData();
-    render();
-    showToast('作業項目を追加しました！');
-  }
-}
-
-// タスクの削除
-function deleteTask(periodId, taskId) {
-  const period = state.periods.find(p => p.id === periodId);
-  if (period) {
-    period.tasks = period.tasks.filter(t => t.id !== taskId);
-    saveData();
-    render();
-    showToast('項目を削除しました。');
-  }
-}
-
-// トースト通知の表示
-function showToast(message) {
-  const toast = document.getElementById('toast');
-  toast.innerText = message;
-  toast.classList.add('show');
-  setTimeout(() => {
-    toast.classList.remove('show');
-  }, 2500);
-}
-
-// イベントリスナーの設定
-function setupEventListeners() {
-  // 期間追加フォーム
-  document.getElementById('addPeriodForm').addEventListener('submit', (e) => {
-    e.preventDefault();
-    const startDate = document.getElementById('startDate').value;
-    const endDate = document.getElementById('endDate').value;
-    const saveDeadline = document.getElementById('saveDeadline').value;
-    const confirmDeadline = document.getElementById('confirmDeadline').value;
-    const meetingDate = document.getElementById('meetingDate').value;
-    const prDate = document.getElementById('prDate').value;
-    addPeriod(startDate, endDate, saveDeadline, confirmDeadline, meetingDate, prDate);
-  });
-
-  // 登録フォーム内の祝日追加ボタン
-  const addHolidayFormBtn = document.getElementById('addHolidayFormBtn');
-  if (addHolidayFormBtn) {
-    addHolidayFormBtn.addEventListener('click', () => {
-      const holidayDateInput = document.getElementById('newHolidayDate');
-      const holidayNameInput = document.getElementById('newHolidayName');
-      const dateVal = holidayDateInput.value;
-      const nameVal = holidayNameInput.value;
-      
-      if (!dateVal || !nameVal.trim()) {
-        showToast('日付と祝日・イベント名を入力してください。');
-        return;
-      }
-      
-      formHolidays.push({ date: dateVal, name: nameVal.trim() });
-      formHolidays.sort((a, b) => new Date(a.date) - new Date(b.date));
-      renderFormHolidays();
-      
-      holidayDateInput.value = '';
-      holidayNameInput.value = '';
-    });
-  }
-
-  // 詳細画面での祝日追加ボタン
-  const detailAddHolidayBtn = document.getElementById('detailAddHolidayBtn');
-  if (detailAddHolidayBtn) {
-    detailAddHolidayBtn.addEventListener('click', () => {
-      const holidayDateInput = document.getElementById('detailNewHolidayDate');
-      const holidayNameInput = document.getElementById('detailNewHolidayName');
-      const dateVal = holidayDateInput.value;
-      const nameVal = holidayNameInput.value;
-      
-      if (!dateVal || !nameVal.trim()) {
-        showToast('日付と祝日・イベント名を入力してください。');
-        return;
-      }
-      
-      addHoliday(state.activePeriodId, dateVal, nameVal);
-      
-      holidayDateInput.value = '';
-      holidayNameInput.value = '';
-    });
-  }
-
-  // 詳細画面から戻るボタン
-  document.getElementById('backBtn').addEventListener('click', navigateToTop);
-
-  // 新規タスク追加フォーム
-  document.getElementById('addTaskForm').addEventListener('submit', (e) => {
-    e.preventDefault();
-    const taskInput = document.getElementById('newTaskInput');
-    const categorySelect = document.getElementById('taskCategorySelect');
-    addTask(state.activePeriodId, taskInput.value, categorySelect.value);
-    taskInput.value = '';
-  });
-
-  // 設定/バックアップモーダルの開閉
-  const modal = document.getElementById('backupModal');
-  document.getElementById('settingsBtn').addEventListener('click', () => {
-    modal.classList.add('active');
-  });
-  document.getElementById('closeModalBtn').addEventListener('click', () => {
-    modal.classList.remove('active');
-  });
-  window.addEventListener('click', (e) => {
-    if (e.target === modal) {
-      modal.classList.remove('active');
+  // 祝日の削除（特定の期間データから）
+  function deleteHoliday(periodId, holidayIndex) {
+    const period = state.periods.find(p => p.id === periodId);
+    if (period && period.holidays) {
+      period.holidays.splice(holidayIndex, 1);
+      saveData();
+      render();
+      showToast('祝日・イベントを削除しました。');
     }
-  });
+  }
 
-  // データエクスポート
-  document.getElementById('exportBtn').addEventListener('click', () => {
-    const dataStr = JSON.stringify(state.periods, null, 2);
-    const blob = new Blob([dataStr], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `shift_manager_backup_${new Date().toISOString().split('T')[0]}.json`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-    showToast('バックアップファイルをダウンロードしました。');
-  });
+  // 期間の削除
+  function deletePeriod(id) {
+    state.periods = state.periods.filter(p => p.id !== id);
+    saveData();
+    render();
+    showToast('期間を削除しました。');
+  }
 
-  // データインポート
-  document.getElementById('importBtn').addEventListener('click', () => {
-    document.getElementById('fileInput').click();
-  });
+  // タスクの完了トグル
+  function toggleTask(periodId, taskId) {
+    const period = state.periods.find(p => p.id === periodId);
+    if (period) {
+      const task = period.tasks.find(t => t.id === taskId);
+      if (task) {
+        task.checked = !task.checked;
+        saveData();
+        render();
+      }
+    }
+  }
 
-  document.getElementById('fileInput').addEventListener('change', (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
+  // タスクの追加
+  function addTask(periodId, text, categoryId) {
+    if (!text.trim()) {
+      showToast('作業項目を入力してください。');
+      return;
+    }
 
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      try {
-        const importedData = JSON.parse(event.target.result);
-        if (Array.isArray(importedData)) {
-          state.periods = importedData;
-          saveData();
-          render();
-          modal.classList.remove('active');
-          showToast('データを正常にインポートしました！');
+    const period = state.periods.find(p => p.id === periodId);
+    if (period) {
+      const newTask = {
+        id: Date.now(),
+        categoryId: parseInt(categoryId, 10),
+        text: text.trim(),
+        checked: false
+      };
+      period.tasks.push(newTask);
+      saveData();
+      render();
+      showToast('作業項目を追加しました！');
+    }
+  }
+
+  // タスクの削除
+  function deleteTask(periodId, taskId) {
+    const period = state.periods.find(p => p.id === periodId);
+    if (period) {
+      period.tasks = period.tasks.filter(t => t.id !== taskId);
+      saveData();
+      render();
+      showToast('項目を削除しました。');
+    }
+  }
+
+  // トースト通知の表示
+  function showToast(message) {
+    const toast = document.getElementById('toast');
+    toast.innerText = message;
+    toast.classList.add('show');
+    setTimeout(() => {
+      toast.classList.remove('show');
+    }, 2500);
+  }
+
+  // イベントリスナーの設定
+  function setupEventListeners() {
+    // 期間追加フォーム
+    document.getElementById('addPeriodForm').addEventListener('submit', (e) => {
+      e.preventDefault();
+      const startDate = document.getElementById('startDate').value;
+      const endDate = document.getElementById('endDate').value;
+      const saveDeadline = document.getElementById('saveDeadline').value;
+      const confirmDeadline = document.getElementById('confirmDeadline').value;
+      const meetingDate = document.getElementById('meetingDate').value;
+      const prDate = document.getElementById('prDate').value;
+      addPeriod(startDate, endDate, saveDeadline, confirmDeadline, meetingDate, prDate);
+    });
+
+    // 登録フォーム内の祝日追加ボタン
+    const addHolidayFormBtn = document.getElementById('addHolidayFormBtn');
+    if (addHolidayFormBtn) {
+      addHolidayFormBtn.addEventListener('click', () => {
+        const holidayDateInput = document.getElementById('newHolidayDate');
+        const holidayNameInput = document.getElementById('newHolidayName');
+        const dateVal = holidayDateInput.value;
+        const nameVal = holidayNameInput.value;
+
+        if (!dateVal || !nameVal.trim()) {
+          showToast('日付と祝日・イベント名を入力してください。');
+          return;
+        }
+
+        formHolidays.push({ date: dateVal, name: nameVal.trim() });
+        formHolidays.sort((a, b) => parseDateLocal(a.date) - parseDateLocal(b.date));
+        renderFormHolidays();
+
+        holidayDateInput.value = '';
+        holidayNameInput.value = '';
+      });
+    }
+
+    // 詳細画面での祝日追加ボタン
+    const detailAddHolidayBtn = document.getElementById('detailAddHolidayBtn');
+    if (detailAddHolidayBtn) {
+      detailAddHolidayBtn.addEventListener('click', () => {
+        const holidayDateInput = document.getElementById('detailNewHolidayDate');
+        const holidayNameInput = document.getElementById('detailNewHolidayName');
+        const dateVal = holidayDateInput.value;
+        const nameVal = holidayNameInput.value;
+
+        if (!dateVal || !nameVal.trim()) {
+          showToast('日付と祝日・イベント名を入力してください。');
+          return;
+        }
+
+        addHoliday(state.activePeriodId, dateVal, nameVal);
+
+        holidayDateInput.value = '';
+        holidayNameInput.value = '';
+      });
+    }
+
+    // 詳細画面から戻るボタン
+    document.getElementById('backBtn').addEventListener('click', navigateToTop);
+
+    // 会議日の指定変更イベントハンドラー
+    const meetingSelect = document.getElementById('meetingSelect');
+    if (meetingSelect) {
+      meetingSelect.addEventListener('change', calculateMeetingDate);
+    }
+
+    // 広報予定日の日付ピッカー変更イベントハンドラー (カレンダーと相互同期)
+    const prDateDisplay = document.getElementById('prDateDisplay');
+    if (prDateDisplay) {
+      prDateDisplay.addEventListener('change', (e) => {
+        const prDateInput = document.getElementById('prDate');
+        prDateInput.value = e.target.value;
+        const prDateDisplayText = document.getElementById('prDateDisplayText');
+        if (prDateDisplayText) {
+          prDateDisplayText.innerText = e.target.value ? formatDateJapanese(e.target.value) : "未設定";
+        }
+        if (e.target.value) {
+          showToast(`広報予定日を ${formatDateJapanese(e.target.value)} に設定しました！`);
         } else {
-          showToast('無効なファイル形式です。');
+          showToast('広報予定日を解除しました。');
         }
-      } catch (err) {
-        showToast('ファイルの読み込みに失敗しました。');
-      }
-    };
-    reader.readAsText(file);
-  });
-}
+        syncMeetingAndPrEvents();
+      });
+    }
 
-// Service Worker の登録
-function registerServiceWorker() {
-  if ('serviceWorker' in navigator) {
-    window.addEventListener('load', () => {
-      navigator.serviceWorker.register('./sw.js')
-        .then((registration) => {
-          console.log('Service Worker が正常に登録されました:', registration.scope);
-        })
-        .catch((error) => {
-          console.error('Service Worker の登録に失敗しました:', error);
-        });
+    // アコーディオンの開閉トグル
+    const accordionTrigger = document.getElementById('accordionTrigger');
+    const formAccordion = document.getElementById('formAccordion');
+    if (accordionTrigger && formAccordion) {
+      accordionTrigger.addEventListener('click', () => {
+        formAccordion.classList.toggle('active');
+      });
+    }
+
+    // 新規タスク追加フォーム
+    document.getElementById('addTaskForm').addEventListener('submit', (e) => {
+      e.preventDefault();
+      const taskInput = document.getElementById('newTaskInput');
+      const categorySelect = document.getElementById('taskCategorySelect');
+      addTask(state.activePeriodId, taskInput.value, categorySelect.value);
+      taskInput.value = '';
+    });
+
+    // 設定/バックアップモーダルの開閉
+    const modal = document.getElementById('backupModal');
+    document.getElementById('settingsBtn').addEventListener('click', () => {
+      modal.classList.add('active');
+    });
+    document.getElementById('closeModalBtn').addEventListener('click', () => {
+      modal.classList.remove('active');
+    });
+    window.addEventListener('click', (e) => {
+      if (e.target === modal) {
+        modal.classList.remove('active');
+      }
+    });
+
+    // データエクスポート
+    document.getElementById('exportBtn').addEventListener('click', () => {
+      const dataStr = JSON.stringify(state.periods, null, 2);
+      const blob = new Blob([dataStr], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `shift_manager_backup_${formatDateLocal(new Date())}.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      showToast('バックアップファイルをダウンロードしました。');
+    });
+
+    // データインポート
+    document.getElementById('importBtn').addEventListener('click', () => {
+      document.getElementById('fileInput').click();
+    });
+
+    document.getElementById('fileInput').addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        try {
+          const importedData = JSON.parse(event.target.result);
+          if (Array.isArray(importedData)) {
+            state.periods = importedData;
+            saveData();
+            render();
+            modal.classList.remove('active');
+            showToast('データを正常にインポートしました！');
+          } else {
+            showToast('無効なファイル形式です。');
+          }
+        } catch (err) {
+          showToast('ファイルの読み込みに失敗しました。');
+        }
+      };
+      reader.readAsText(file);
     });
   }
-}
 
-// 日本の祝日を自動計算して取得する関数
-function getJapaneseHolidays(startDateStr, endDateStr) {
-  const start = new Date(startDateStr);
-  const end = new Date(endDateStr);
-  const holidays = [];
-
-  // 期間内のすべての年月日をループ
-  for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
-    const year = d.getFullYear();
-    const month = d.getMonth() + 1; // 1-12
-    const date = d.getDate();
-    const day = d.getDay(); // 0:日, 1:月, ...
-
-    let holidayName = "";
-
-    // 固定祝日
-    if (month === 1 && date === 1) holidayName = "元日";
-    else if (month === 2 && date === 11) holidayName = "建国記念の日";
-    else if (month === 2 && date === 23 && year >= 2020) holidayName = "天皇誕生日";
-    else if (month === 4 && date === 29) holidayName = "昭和の日";
-    else if (month === 5 && date === 3) holidayName = "憲法記念日";
-    else if (month === 5 && date === 4) holidayName = "みどりの日";
-    else if (month === 5 && date === 5) holidayName = "こどもの日";
-    else if (month === 8 && date === 11) holidayName = "山の日";
-    else if (month === 11 && date === 3) holidayName = "文化の日";
-    else if (month === 11 && date === 23) holidayName = "勤労感謝の日";
-    
-    // 春分の日・秋分の日の簡易計算 (1980〜2099年対応)
-    else if (month === 3) {
-      const equinox = Math.floor(20.8431 + 0.242194 * (year - 1980) - Math.floor((year - 1980) / 4));
-      if (date === equinox) holidayName = "春分の日";
-    } else if (month === 9) {
-      const equinox = Math.floor(23.2488 + 0.242194 * (year - 1980) - Math.floor((year - 1980) / 4));
-      if (date === equinox) holidayName = "秋分の日";
-    }
-
-    // ハッピーマンデー (第X月曜日)
-    if (day === 1) {
-      const nth = Math.floor((date - 1) / 7) + 1;
-      if (month === 1 && nth === 2) holidayName = "成人の日";
-      else if (month === 7 && nth === 3) holidayName = "海の日";
-      else if (month === 9 && nth === 3) holidayName = "敬老の日";
-      else if (month === 10 && nth === 2) holidayName = "スポーツの日";
-    }
-
-    if (holidayName) {
-      holidays.push({ date: d.toISOString().split('T')[0], name: holidayName });
+  // Service Worker の登録
+  function registerServiceWorker() {
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./sw.js')
+          .then((registration) => {
+            console.log('Service Worker が正常に登録されました:', registration.scope);
+          })
+          .catch((error) => {
+            console.error('Service Worker の登録に失敗しました:', error);
+          });
+      });
     }
   }
 
-  // 振替休日と国民の休日の適用
-  const holidayMap = {};
-  holidays.forEach(h => {
-    holidayMap[h.date] = h.name;
-  });
+  // 日本の祝日を自動計算して取得する関数
+  function getJapaneseHolidays(startDateStr, endDateStr) {
+    const start = parseDateLocal(startDateStr);
+    const end = parseDateLocal(endDateStr);
+    if (!start || !end) return [];
+    const holidays = [];
 
-  const finalHolidays = [...holidays];
+    // 期間内のすべての年月日をループ
+    for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+      const year = d.getFullYear();
+      const month = d.getMonth() + 1; // 1-12
+      const date = d.getDate();
+      const day = d.getDay(); // 0:日, 1:月, ...
 
-  // 期間内を再走査して振替休日・国民の休日を適用
-  for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
-    const dateStr = d.toISOString().split('T')[0];
-    if (holidayMap[dateStr]) continue;
+      let holidayName = "";
 
-    const day = d.getDay();
-    // 振替休日判定
-    if (day !== 0) {
-      let temp = new Date(d);
-      temp.setDate(temp.getDate() - 1);
-      let prevDateStr = temp.toISOString().split('T')[0];
-      
-      if (holidayMap[prevDateStr]) {
-        let isSubstitute = false;
-        let checkDate = new Date(temp);
-        while (true) {
-          if (checkDate.getDay() === 0) {
-            if (holidayMap[checkDate.toISOString().split('T')[0]]) {
-              isSubstitute = true;
+      // 固定祝日
+      if (month === 1 && date === 1) holidayName = "元日";
+      else if (month === 2 && date === 11) holidayName = "建国記念の日";
+      else if (month === 2 && date === 23 && year >= 2020) holidayName = "天皇誕生日";
+      else if (month === 4 && date === 29) holidayName = "昭和の日";
+      else if (month === 5 && date === 3) holidayName = "憲法記念日";
+      else if (month === 5 && date === 4) holidayName = "みどりの日";
+      else if (month === 5 && date === 5) holidayName = "こどもの日";
+      else if (month === 8 && date === 11) holidayName = "山の日";
+      else if (month === 11 && date === 3) holidayName = "文化の日";
+      else if (month === 11 && date === 23) holidayName = "勤労感謝の日";
+
+      // 春分の日・秋分の日の簡易計算 (1980〜2099年対応)
+      else if (month === 3) {
+        const equinox = Math.floor(20.8431 + 0.242194 * (year - 1980) - Math.floor((year - 1980) / 4));
+        if (date === equinox) holidayName = "春分の日";
+      } else if (month === 9) {
+        const equinox = Math.floor(23.2488 + 0.242194 * (year - 1980) - Math.floor((year - 1980) / 4));
+        if (date === equinox) holidayName = "秋分の日";
+      }
+
+      // ハッピーマンデー (第X月曜日)
+      if (day === 1) {
+        const nth = Math.floor((date - 1) / 7) + 1;
+        if (month === 1 && nth === 2) holidayName = "成人の日";
+        else if (month === 7 && nth === 3) holidayName = "海の日";
+        else if (month === 9 && nth === 3) holidayName = "敬老の日";
+        else if (month === 10 && nth === 2) holidayName = "スポーツの日";
+      }
+
+      if (holidayName) {
+        holidays.push({ date: formatDateLocal(d), name: holidayName });
+      }
+    }
+
+    // 振替休日と国民の休日の適用
+    const holidayMap = {};
+    holidays.forEach(h => {
+      holidayMap[h.date] = h.name;
+    });
+
+    const finalHolidays = [...holidays];
+
+    // 期間内を再走査して振替休日・国民の休日を適用
+    for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+      const dateStr = formatDateLocal(d);
+      if (holidayMap[dateStr]) continue;
+
+      const day = d.getDay();
+      // 振替休日判定
+      if (day !== 0) {
+        let temp = new Date(d);
+        temp.setDate(temp.getDate() - 1);
+        let prevDateStr = formatDateLocal(temp);
+
+        if (holidayMap[prevDateStr]) {
+          let isSubstitute = false;
+          let checkDate = new Date(temp);
+          while (true) {
+            if (checkDate.getDay() === 0) {
+              if (holidayMap[formatDateLocal(checkDate)]) {
+                isSubstitute = true;
+              }
+              break;
             }
-            break;
+            if (!holidayMap[formatDateLocal(checkDate)]) {
+              break;
+            }
+            checkDate.setDate(checkDate.getDate() - 1);
           }
-          if (!holidayMap[checkDate.toISOString().split('T')[0]]) {
-            break;
-          }
-          checkDate.setDate(checkDate.getDate() - 1);
-        }
-        
-        if (isSubstitute) {
-          holidayMap[dateStr] = "振替休日";
-          finalHolidays.push({ date: dateStr, name: "振替休日" });
-        }
-      }
-    }
 
-    // 国民の休日判定
-    if (!holidayMap[dateStr]) {
-      let prev = new Date(d);
-      prev.setDate(prev.getDate() - 1);
-      let next = new Date(d);
-      next.setDate(next.getDate() + 1);
-      
-      const prevStr = prev.toISOString().split('T')[0];
-      const nextStr = next.toISOString().split('T')[0];
-      
-      if (holidayMap[prevStr] && holidayMap[nextStr] && holidayMap[prevStr] !== "振替休日" && holidayMap[nextStr] !== "振替休日") {
-        holidayMap[dateStr] = "国民の休日";
-        finalHolidays.push({ date: dateStr, name: "国民の休日" });
+          if (isSubstitute) {
+            holidayMap[dateStr] = "振替休日";
+            finalHolidays.push({ date: dateStr, name: "振替休日" });
+          }
+        }
+      }
+
+      // 国民の休日判定
+      if (!holidayMap[dateStr]) {
+        let prev = new Date(d);
+        prev.setDate(prev.getDate() - 1);
+        let next = new Date(d);
+        next.setDate(next.getDate() + 1);
+
+        const prevStr = formatDateLocal(prev);
+        const nextStr = formatDateLocal(next);
+
+        if (holidayMap[prevStr] && holidayMap[nextStr] && holidayMap[prevStr] !== "振替休日" && holidayMap[nextStr] !== "振替休日") {
+          holidayMap[dateStr] = "国民の休日";
+          finalHolidays.push({ date: dateStr, name: "国民の休日" });
+        }
       }
     }
-  }
 
   // 日付順にソートして返す
-  return finalHolidays.sort((a, b) => new Date(a.date) - new Date(b.date));
+  return finalHolidays.sort((a, b) => parseDateLocal(a.date) - parseDateLocal(b.date));
 }
 
 // 期間内の第2木曜日を取得する関数
-function getSecondThursday(startDateStr, endDateStr) {
-  const start = new Date(startDateStr);
-  const end = new Date(endDateStr);
-  
-  for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
-    const day = d.getDay();
-    const date = d.getDate();
-    if (day === 4) { // 木曜日
-      if (date >= 8 && date <= 14) {
-        return d.toISOString().split('T')[0];
+  function getSecondThursday(startDateStr, endDateStr) {
+    const start = parseDateLocal(startDateStr);
+    const end = parseDateLocal(endDateStr);
+    if (!start || !end) return "なし";
+
+    for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+      const day = d.getDay();
+      const date = d.getDate();
+      if (day === 4) { // 木曜日
+        if (date >= 8 && date <= 14) {
+          return formatDateLocal(d);
+        }
       }
     }
+    return "なし";
   }
-  return "なし";
-}
