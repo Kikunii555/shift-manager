@@ -1,3 +1,14 @@
+// Trusted Types のセキュリティポリシー対応（innerHTMLブロック対策）
+if (window.trustedTypes && window.trustedTypes.createPolicy) {
+  if (!window.trustedTypes.defaultPolicy) {
+    window.trustedTypes.createPolicy('default', {
+      createHTML: (string) => string,
+      createScript: (string) => string,
+      createScriptURL: (string) => string
+    });
+  }
+}
+
 // 状態管理
 let state = {
   periods: [],
@@ -39,49 +50,32 @@ const CATEGORIES = [
 
 // 初期設定のチェック項目テンプレート
 const DEFAULT_TASKS_TEMPLATE = [
+  // 1. 作業前の準備段階
   { 
     categoryId: 1, 
-    text: "小項目１",
+    text: "指定表記入セットの印刷",
     subtasks: [
-      { text: "小タスク１" },
-      { text: "小タスク２" }
+      { text: "計年計画一覧" },
+      { text: "指定表下書き" },
+      { text: "週別休暇確認表" },
+      { text: "担務指定表" },
+      { text: "勤務指定表" }
     ]
   },
-  { categoryId: 1, text: "小項目２", subtasks: [] },
+  { categoryId: 1, text: "休暇希望の確認", subtasks: [] },
+  { categoryId: 1, text: "週別休暇計画の振り分け", subtasks: [] },
+
+  // 2. 指定表への記入作業
+  { categoryId: 2, text: "指定表下書きへの記入", subtasks: [] },
+  { categoryId: 2, text: "担務指定表に記入", subtasks: [] },
   { 
     categoryId: 2, 
-    text: "小項目１",
+    text: "勤務指定表に記入",
     subtasks: [
-      { text: "小タスク１" },
-      { text: "小タスク２" }
+      { text: "正社員" },
+      { text: "期間雇用社員" }
     ]
-  },
-  { categoryId: 2, text: "小項目２", subtasks: [] },
-  { 
-    categoryId: 3, 
-    text: "小項目１",
-    subtasks: [
-      { text: "小タスク１" }
-    ]
-  },
-  { categoryId: 3, text: "小項目２", subtasks: [] },
-  { 
-    categoryId: 4, 
-    text: "小項目１",
-    subtasks: [
-      { text: "小タスク１" },
-      { text: "小タスク２" }
-    ]
-  },
-  { categoryId: 4, text: "小項目２", subtasks: [] },
-  { 
-    categoryId: 5, 
-    text: "小項目１",
-    subtasks: [
-      { text: "小タスク１" }
-    ]
-  },
-  { categoryId: 5, text: "小項目２", subtasks: [] }
+  }
 ];
 
 // 初期化処理
@@ -519,6 +513,24 @@ function syncMeetingAndPrEvents() {
                 }
               });
             });
+          }
+
+          // 古いデモ用タスクが含まれている場合、新テンプレートに上書き更新する
+          const hasLegacyTasks = period.tasks && period.tasks.some(t => t.text === "小項目１" || t.text === "小項目２");
+          if (hasLegacyTasks) {
+            period.tasks = DEFAULT_TASKS_TEMPLATE.map((t, idx) => ({
+              id: Date.now() + idx + 100,
+              categoryId: t.categoryId,
+              text: t.text,
+              checked: false,
+              checkedAt: null,
+              subtasks: t.subtasks ? t.subtasks.map((st, sIdx) => ({
+                id: Date.now() + idx + 1000 + sIdx,
+                text: st.text,
+                checked: false,
+                checkedAt: null
+              })) : []
+            }));
           }
         });
         saveData(); // アップグレードしたデータを保存
