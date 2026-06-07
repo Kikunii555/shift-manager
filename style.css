@@ -91,6 +91,7 @@ header h1 {
     opacity: 0;
     transform: translateY(10px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -171,7 +172,8 @@ label {
   font-weight: 500;
 }
 
-input[type="date"], input[type="text"] {
+input[type="date"],
+input[type="text"] {
   width: 100%;
   padding: 14px 16px;
   border-radius: var(--border-radius);
@@ -183,7 +185,8 @@ input[type="date"], input[type="text"] {
   transition: all var(--transition-speed) ease;
 }
 
-input[type="date"]:focus, input[type="text"]:focus {
+input[type="date"]:focus,
+input[type="text"]:focus {
   border-color: var(--accent-color);
   box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
   outline: none;
@@ -340,6 +343,8 @@ input[type="date"]:focus, input[type="text"]:focus {
   font-weight: 400;
   color: var(--text-primary);
   word-break: break-all;
+  /* 👇 これを追加することで、JSの \n でぴったり改行されるようになります */
+  white-space: pre-wrap;
 }
 
 /* 新規項目追加バー */
@@ -379,7 +384,7 @@ input[type="date"]:focus, input[type="text"]:focus {
   color: #ffffff;
   padding: 12px 24px;
   border-radius: 30px;
-  box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
   z-index: 1000;
   transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
   font-size: 0.9rem;
@@ -446,7 +451,7 @@ input[type="date"]:focus, input[type="text"]:focus {
   flex-direction: column;
   gap: 10px;
   padding: 16px;
-  background-color: rgba(255,255,255,0.02);
+  background-color: rgba(255, 255, 255, 0.02);
   border: 1px dashed var(--border-color);
   border-radius: var(--border-radius);
 }
@@ -667,14 +672,16 @@ input[type="date"]:focus, input[type="text"]:focus {
   border-radius: 8px;
   font-size: 0.8rem;
   font-weight: 500;
-  color: #cbd5e1; /* スレート300 (期間外) */
+  color: #cbd5e1;
+  /* スレート300 (期間外) */
   cursor: default;
   transition: all 0.2s ease;
 }
 
 .calendar-day-cell.in-period {
   color: var(--text-primary);
-  background-color: rgba(167, 243, 208, 0.15); /* 薄いミント */
+  background-color: rgba(167, 243, 208, 0.15);
+  /* 薄いミント */
   cursor: pointer;
 }
 
@@ -699,6 +706,7 @@ input[type="date"]:focus, input[type="text"]:focus {
   color: #b45309 !important;
   border: 1.5px dashed #f59e0b !important;
 }
+
 .calendar-day-cell.event-meeting:hover {
   background-color: rgba(245, 158, 11, 0.18) !important;
 }
@@ -708,6 +716,7 @@ input[type="date"]:focus, input[type="text"]:focus {
   color: #b45309 !important;
   border: 1.5px solid #f59e0b !important;
 }
+
 .calendar-day-cell.event-pr:hover {
   background-color: rgba(245, 158, 11, 0.18) !important;
 }
@@ -719,6 +728,7 @@ input[type="date"]:focus, input[type="text"]:focus {
   background-color: rgba(239, 68, 68, 0.08) !important;
   color: #dc2626 !important;
 }
+
 .calendar-day-cell.in-period.day-sunday:not(.period-start):not(.period-end):hover,
 .calendar-day-cell.in-period.day-saturday:not(.period-start):not(.period-end):hover,
 .calendar-day-cell.in-period.event-holiday:not(.period-start):not(.period-end):hover {
@@ -730,6 +740,7 @@ input[type="date"]:focus, input[type="text"]:focus {
   background-color: rgba(59, 130, 246, 0.08) !important;
   color: #1d4ed8 !important;
 }
+
 .calendar-day-cell.in-period.event-custom-holiday:not(.period-start):not(.period-end):hover {
   background-color: rgba(59, 130, 246, 0.18) !important;
 }
@@ -914,21 +925,47 @@ input[type="date"]:focus, input[type="text"]:focus {
 
 /* チェック時の視覚フィードバック（バウンド・波紋・キラキラ） */
 @keyframes popCheckbox {
-  0% { transform: scale(1); }
-  50% { transform: scale(1.25); }
-  100% { transform: scale(1); }
+  0% {
+    transform: scale(1);
+  }
+
+  50% {
+    transform: scale(1.25);
+  }
+
+  100% {
+    transform: scale(1);
+  }
 }
 
 @keyframes checkmarkAppear {
-  0% { transform: scale(0) rotate(-45deg); opacity: 0; }
-  100% { transform: scale(1) rotate(0deg); opacity: 1; }
+  0% {
+    transform: scale(0) rotate(-45deg);
+    opacity: 0;
+  }
+
+  100% {
+    transform: scale(1) rotate(0deg);
+    opacity: 1;
+  }
 }
 
 @keyframes itemBump {
-  0% { transform: scale(1); }
-  35% { transform: scale(0.975); }
-  75% { transform: scale(1.01); }
-  100% { transform: scale(1); }
+  0% {
+    transform: scale(1);
+  }
+
+  35% {
+    transform: scale(0.975);
+  }
+
+  75% {
+    transform: scale(1.01);
+  }
+
+  100% {
+    transform: scale(1);
+  }
 }
 
 @keyframes checkboxRipple {
@@ -936,6 +973,7 @@ input[type="date"]:focus, input[type="text"]:focus {
     transform: scale(1);
     opacity: 1;
   }
+
   100% {
     transform: scale(1.8);
     opacity: 0;
@@ -947,9 +985,11 @@ input[type="date"]:focus, input[type="text"]:focus {
     transform: translate(-50%, -50%) rotate(var(--angle)) translateY(0) scale(1);
     opacity: 1;
   }
+
   80% {
     opacity: 0.8;
   }
+
   100% {
     transform: translate(-50%, -50%) rotate(var(--angle)) translateY(var(--speed)) scale(0);
     opacity: 0;
@@ -1001,24 +1041,27 @@ input[type="date"]:focus, input[type="text"]:focus {
     align-items: flex-start !important;
     padding: 12px 14px !important;
   }
-  
+
   .checklist-item-left {
     width: 100%;
   }
-  
+
   .checked-at-text {
-    margin-left: 34px !important; /* チェックボックス(24px) + マージン(10px)分 */
+    margin-left: 34px !important;
+    /* チェックボックス(24px) + マージン(10px)分 */
     padding-right: 0 !important;
     margin-top: 4px !important;
     align-self: flex-start !important;
   }
-  
+
   /* サブタスク（小タスク）のスタイル調整 */
   .checklist-item.sub-item {
     padding: 10px 12px !important;
   }
+
   .checklist-item.sub-item .checked-at-text {
-    margin-left: 30px !important; /* サブタスクのチェックボックス(20px) + マージン(10px)分 */
+    margin-left: 30px !important;
+    /* サブタスクのチェックボックス(20px) + マージン(10px)分 */
   }
 }
 
@@ -1026,17 +1069,22 @@ input[type="date"]:focus, input[type="text"]:focus {
 #detailsCalendarContainer .calendar-day-cell {
   cursor: default !important;
 }
+
 #detailsCalendarContainer .calendar-day-cell.in-period:hover {
-  background-color: rgba(167, 243, 208, 0.15) !important; /* 初期色に戻す */
+  background-color: rgba(167, 243, 208, 0.15) !important;
+  /* 初期色に戻す */
 }
+
 #detailsCalendarContainer .calendar-day-cell.in-period.day-sunday:hover,
 #detailsCalendarContainer .calendar-day-cell.in-period.day-saturday:hover,
 #detailsCalendarContainer .calendar-day-cell.in-period.event-holiday:hover {
   background-color: rgba(239, 68, 68, 0.08) !important;
 }
+
 #detailsCalendarContainer .calendar-day-cell.in-period.event-custom-holiday:hover {
   background-color: rgba(59, 130, 246, 0.08) !important;
 }
+
 #detailsCalendarContainer .calendar-day-cell.event-meeting:hover,
 #detailsCalendarContainer .calendar-day-cell.event-pr:hover {
   background-color: rgba(245, 158, 11, 0.08) !important;
@@ -1045,15 +1093,19 @@ input[type="date"]:focus, input[type="text"]:focus {
 /* 詳細画面の期間・進捗表示エリアの上部固定（Sticky）スタイル */
 .details-sticky-header {
   position: sticky;
-  top: 84px; /* アプリヘッダーの高さ(約84px)の下にぴったり固定 */
+  top: 84px;
+  /* アプリヘッダーの高さ(約84px)の下にぴったり固定 */
   z-index: 90;
-  background-color: var(--bg-color); /* 背景を不透明にしてスクロール項目を隠す */
+  background-color: var(--bg-color);
+  /* 背景を不透明にしてスクロール項目を隠す */
   padding-top: 8px;
   padding-bottom: 14px;
   border-bottom: 1px solid var(--border-color);
-  margin-left: -16px; /* 親要素 .view の padding (16px) 分を外側に広げる */
+  margin-left: -16px;
+  /* 親要素 .view の padding (16px) 分を外側に広げる */
   margin-right: -16px;
   padding-left: 16px;
   padding-right: 16px;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05); /* 固定ヘッダーの下に浮いたような影を追加 */
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+  /* 固定ヘッダーの下に浮いたような影を追加 */
 }
