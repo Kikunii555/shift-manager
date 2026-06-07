@@ -370,7 +370,7 @@ function renderFormHolidays() {
   container.innerHTML = '';
 
   if (formHolidays.length === 0) {
-    container.innerHTML = '<span style="font-size:0.8rem; color:var(--text-secondary);">減区・イベントはありません</span>';
+    container.innerHTML = '<span style="font-size:0.8rem; color:var(--text-secondary);">イベントはありません</span>';
     return;
   }
 
@@ -879,7 +879,7 @@ function renderDetailsView() {
   const formattedEnd = formatDateJapanese(period.endDate);
 
   // タイトル設定
-  document.getElementById('detailsTitle').innerText = `${formattedStart} 〜 ${formattedEnd} 指定表作成`;
+  document.getElementById('detailsTitle').innerText = `${formattedStart} 〜 ${formattedEnd} \n指定表作成`;
 
   // 全体の進捗数と進捗率、および進行位置の表示更新
   const totalTasks = period.tasks.length;
@@ -908,7 +908,7 @@ function renderDetailsView() {
     });
 
     if (lastCheckedTask) {
-      currentStatusText = `現在の進捗: 大項目${lastCheckedCategoryNum}の「${escapeHtml(lastCheckedTask.text)}」まで完了`;
+      currentStatusText = `現在の進捗: ${lastCheckedCategoryNum}.の「${escapeHtml(lastCheckedTask.text)}」まで完了`;
     }
   }
   document.getElementById('detailsCurrentStatus').innerText = currentStatusText;
@@ -921,7 +921,7 @@ function renderDetailsView() {
       const emptyMsg = document.createElement('span');
       emptyMsg.style.fontSize = '0.85rem';
       emptyMsg.style.color = 'var(--text-secondary)';
-      emptyMsg.textContent = '減区・イベントはありません。';
+      emptyMsg.textContent = 'イベントはありません。';
       detailsHolidaysList.appendChild(emptyMsg);
     } else {
       period.holidays.forEach((h, idx) => {
@@ -1386,7 +1386,7 @@ function addPeriod(startDate, endDate, saveDeadline, confirmDeadline, meetingDat
 // 祝日の追加
 function addHoliday(periodId, date, name) {
   if (!date || !name.trim()) {
-    showToast('日付と減区・イベント名を入力してください。');
+    showToast('日付とイベント名を入力してください。');
     return;
   }
 
@@ -1401,7 +1401,7 @@ function addHoliday(periodId, date, name) {
     period.holidays.sort((a, b) => parseDateLocal(a.date) - parseDateLocal(b.date));
     saveData();
     render();
-    showToast('減区・イベントを追加しました！');
+    showToast('イベントを追加しました！');
   }
 }
 
@@ -1412,7 +1412,7 @@ function deleteHoliday(periodId, holidayIndex) {
     period.holidays.splice(holidayIndex, 1);
     saveData();
     render();
-    showToast('減区・イベントを削除しました。');
+    showToast('イベントを削除しました。');
   }
 }
 
@@ -1597,7 +1597,7 @@ function setupEventListeners() {
       const nameVal = holidayNameInput.value;
 
       if (!dateVal || !nameVal.trim()) {
-        showToast('日付と減区・イベント名を入力してください。');
+        showToast('日付とイベント名を入力してください。');
         return;
       }
 
@@ -1621,7 +1621,7 @@ function setupEventListeners() {
       const nameVal = holidayNameInput.value;
 
       if (!dateVal || !nameVal.trim()) {
-        showToast('日付と減区・イベント名を入力してください。');
+        showToast('日付とイベント名を入力してください。');
         return;
       }
 

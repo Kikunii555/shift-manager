@@ -1096,7 +1096,7 @@ input[type="text"]:focus {
   top: 84px;
   /* アプリヘッダーの高さ(約84px)の下にぴったり固定 */
   z-index: 90;
-  background-color: var(--bg-color);
+  background-color: hsl(54, 68%, 69%);
   /* 背景を不透明にしてスクロール項目を隠す */
   padding-top: 8px;
   padding-bottom: 14px;

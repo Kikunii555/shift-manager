@@ -28,7 +28,9 @@
     <!-- トップ画面用ヘッダー -->
     <header id="appHeader">
       <div style="display: flex; align-items: center; gap: 8px; flex: 1;">
-        <button class="btn-icon" id="backBtn" style="display: none; font-size: 1.2rem; width: 38px; height: 38px; border-radius: 50%; padding: 0; align-items: center; justify-content: center; flex-shrink: 0;" title="戻る" aria-label="Back">⬅️</button>
+        <button class="btn-icon" id="backBtn"
+          style="display: none; font-size: 1.2rem; width: 38px; height: 38px; border-radius: 50%; padding: 0; align-items: center; justify-content: center; flex-shrink: 0;"
+          title="戻る" aria-label="Back">⬅️</button>
         <h1 style="margin: 0; display: flex; align-items: center; gap: 8px;">👷 指定表チェッカー</h1>
       </div>
       <button class="btn-icon" id="settingsBtn" title="設定・データバックアップ" aria-label="Settings">
@@ -43,7 +45,7 @@
         <form id="addPeriodForm">
           <div class="form-group">
             <label style="font-size: 1rem; font-weight: 700; color: var(--text-primary);">📅 新しい勤務期間を登録する</label>
-            
+
             <div class="form-row" style="margin-top: 10px;">
               <div>
                 <label style="font-size:0.75rem;">開始日</label>
@@ -63,7 +65,8 @@
             </div>
 
             <!-- 自動決定される勤務期間の曜日付き表示 -->
-            <div id="periodDisplayTitle" style="font-size: 0.9rem; font-weight: 700; color: var(--text-primary); margin-top: 12px; padding: 10px; background: rgba(45, 74, 67, 0.05); border-radius: var(--border-radius); text-align: center; border: 1px solid var(--border-color);">
+            <div id="periodDisplayTitle"
+              style="font-size: 0.9rem; font-weight: 700; color: var(--text-primary); margin-top: 12px; padding: 10px; background: rgba(45, 74, 67, 0.05); border-radius: var(--border-radius); text-align: center; border: 1px solid var(--border-color);">
               期間：未設定
             </div>
 
@@ -83,7 +86,8 @@
                 <div class="form-row" style="margin-top: 14px;">
                   <div>
                     <label for="meetingSelect" style="font-size:0.75rem;">経推・会議日の指定</label>
-                    <select id="meetingSelect" style="width: 100%; padding: 12px; border-radius: var(--border-radius); border: 1px solid var(--border-color); background-color: var(--card-bg); color: var(--text-primary); font-family: var(--font-family); font-size: 0.9rem; outline: none; -webkit-appearance: none; appearance: none; background-image: url('data:image/svg+xml;charset=UTF-8,%3Csvg%20xmlns%3D%22http%3E//www.w3.org/2000/svg%22%20width%3D%2224%22%20height%3D%2224%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22%232d4a43%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpolyline%20points%3D%226%209%2012%2015%2018%209%22%3E%3C/polyline%3E%3C/svg%3E'); background-repeat: no-repeat; background-position: right 12px center; background-size: 14px;">
+                    <select id="meetingSelect"
+                      style="width: 100%; padding: 12px; border-radius: var(--border-radius); border: 1px solid var(--border-color); background-color: var(--card-bg); color: var(--text-primary); font-family: var(--font-family); font-size: 0.9rem; outline: none; -webkit-appearance: none; appearance: none; background-image: url('data:image/svg+xml;charset=UTF-8,%3Csvg%20xmlns%3D%22http%3E//www.w3.org/2000/svg%22%20width%3D%2224%22%20height%3D%2224%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22%232d4a43%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpolyline%20points%3D%226%209%2012%2015%2018%209%22%3E%3C/polyline%3E%3C/svg%3E'); background-repeat: no-repeat; background-position: right 12px center; background-size: 14px;">
                       <option value="2-4" selected>第2木曜日 (基本)</option>
                       <option value="1-4">第1木曜日</option>
                       <option value="3-4">第3木曜日</option>
@@ -127,19 +131,23 @@
                 </div>
 
                 <!-- 祝日管理セクション -->
-                <div style="margin-top: 14px; padding: 12px; background: rgba(255,255,255,0.02); border: 1px solid var(--border-color); border-radius: var(--border-radius);">
-                  <label style="font-size:0.8rem; font-weight:600; display:block; margin-bottom: 8px;">🇯🇵 この期間の減区・イベント</label>
-                  
+                <div
+                  style="margin-top: 14px; padding: 12px; background: rgba(255,255,255,0.02); border: 1px solid var(--border-color); border-radius: var(--border-radius);">
+                  <label style="font-size:0.8rem; font-weight:600; display:block; margin-bottom: 8px;">🇯🇵
+                    この期間のイベント</label>
+
                   <!-- 自動取得・手動追加された祝日リスト -->
                   <div id="formHolidaysContainer" style="display:flex; flex-wrap:wrap; gap:8px; margin-bottom:10px;">
                     <!-- JSで動的にバッジが追加されます -->
                   </div>
-                  
+
                   <!-- 祝日の手動追加フォーム -->
                   <div style="display:flex; gap:6px;">
                     <input type="date" id="newHolidayDate" style="padding: 8px 10px; font-size: 0.85rem; flex: 1.2;">
-                    <input type="text" id="newHolidayName" placeholder="減区・イベント名" style="padding: 8px 10px; font-size: 0.85rem; flex: 1.8;">
-                    <button type="button" id="addHolidayFormBtn" class="btn-primary" style="padding: 0 12px; font-size: 0.85rem; border-radius: 8px; box-shadow: none;">追加</button>
+                    <input type="text" id="newHolidayName" placeholder="イベント名"
+                      style="padding: 8px 10px; font-size: 0.85rem; flex: 1.8;">
+                    <button type="button" id="addHolidayFormBtn" class="btn-primary"
+                      style="padding: 0 12px; font-size: 0.85rem; border-radius: 8px; box-shadow: none;">追加</button>
                   </div>
                 </div>
               </div>
@@ -166,17 +174,23 @@
       <!-- 固定ヘッダーエリア -->
       <div class="details-sticky-header">
         <h2 style="font-size: 0.85rem; color: var(--text-secondary); font-weight: 500;">選択中の期間</h2>
-        <div id="detailsTitle" style="font-size: 1.15rem; font-weight: 700; color: var(--text-primary); margin-bottom: 8px;"></div>
+        <div id="detailsTitle"
+          style="font-size: 1.15rem; font-weight: 700; color: var(--text-primary); margin-bottom: 8px;"></div>
         <!-- 全体の進捗数と進捗率、および進行位置の表示領域 -->
-        <div id="detailsProgressContainer" style="background: rgba(45, 74, 67, 0.04); padding: 12px; border-radius: var(--border-radius); border: 1px solid var(--border-color); font-size: 0.85rem; display: flex; flex-direction: column; gap: 6px; margin-top: 6px;">
+        <div id="detailsProgressContainer"
+          style="background: rgba(45, 74, 67, 0.04); padding: 12px; border-radius: var(--border-radius); border: 1px solid var(--border-color); font-size: 0.85rem; display: flex; flex-direction: column; gap: 6px; margin-top: 6px;">
           <div style="display: flex; justify-content: space-between; font-weight: 600;">
             <span>全体進捗: <span id="detailsProgressCount">0/0</span> 項目</span>
             <span id="detailsProgressPercent" style="color: var(--accent-color);">0%</span>
           </div>
-          <div class="progress-container" style="background-color: rgba(45, 74, 67, 0.1); height: 8px; border-radius: 4px;">
-            <div id="detailsProgressBar" class="progress-bar" style="width: 0%; height: 100%; border-radius: 4px; background: linear-gradient(90deg, var(--accent-color) 0%, var(--success-color) 100%); transition: width 0.3s ease;"></div>
+          <div class="progress-container"
+            style="background-color: rgba(45, 74, 67, 0.1); height: 8px; border-radius: 4px;">
+            <div id="detailsProgressBar" class="progress-bar"
+              style="width: 0%; height: 100%; border-radius: 4px; background: linear-gradient(90deg, var(--accent-color) 0%, var(--success-color) 100%); transition: width 0.3s ease;">
+            </div>
           </div>
-          <div id="detailsCurrentStatus" style="font-size: 0.8rem; color: var(--text-secondary); font-weight: 500; margin-top: 2px;">
+          <div id="detailsCurrentStatus"
+            style="font-size: 0.8rem; color: var(--text-secondary); font-weight: 500; margin-top: 2px;">
             進捗状況: 未着手
           </div>
         </div>
@@ -186,7 +200,8 @@
       <div id="detailsCalendarContainer" style="margin-top: 14px;"></div>
 
       <!-- 祝日・イベントセクション -->
-      <section id="detailsHolidaysSection" class="holidays-section" style="padding: 14px 16px; background: rgba(255,255,255,0.02); border: 1px solid var(--border-color); border-radius: var(--border-radius); display: flex; flex-direction: column; gap: 10px;">
+      <section id="detailsHolidaysSection" class="holidays-section"
+        style="padding: 14px 16px; background: rgba(255,255,255,0.02); border: 1px solid var(--border-color); border-radius: var(--border-radius); display: flex; flex-direction: column; gap: 10px;">
         <h3 style="font-size: 0.85rem; color: var(--text-secondary); font-weight: 600;">🇯🇵 この期間の祝日・イベント</h3>
         <div id="detailsHolidaysList" style="display: flex; flex-wrap: wrap; gap: 8px;">
           <!-- 祝日バッジが動的に追加されます -->
