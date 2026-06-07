@@ -75,6 +75,39 @@ const DEFAULT_TASKS_TEMPLATE = [
       { text: "正社員" },
       { text: "期間雇用社員" }
     ]
+  },
+
+  // 3. PCシステムへの入力作業
+  { categoryId: 3, text: "担務指定表の作成", subtasks: [] },
+  {
+    categoryId: 3,
+    text: "業務支援に入力",
+    subtasks: [
+      { text: "正社員担務入力" },
+      { text: "【正社員】祝日勤務を追加入力" },
+      { text: "【正社員】祝日代休を追加入力" },
+      { text: "期間雇用社員担務入力" },
+      { text: "【期間雇用社員】祝日勤務を祝日に修正" }
+    ]
+  },
+  {
+    categoryId: 3,
+    text: "勤務指定表を作成",
+    subtasks: [
+      { text: "業務支援入力を一時的に確定入力" },
+      { text: "【正社員】エクセル出力してPCに保存" },
+      { text: "【期間雇用社員】エクセルに出力してPCに保存" },
+      { text: "ファイルを開いてマクロ2か所を有効にし、監督社印と社員確認欄を削除する" },
+      { text: "左上の職場名を修正" },
+      { text: "【正社員】祝日代休と限定非番を追加" },
+      { text: "【正社員】局長欄と局長押印欄を追加（押印欄の幅は60px）" },
+      { text: "印刷設定で用紙サイズをA3の手差し印刷に変更し、印刷範囲を\"すべての行を1ページに印刷する\"に設定" },
+      { text: "【正社員】いったん戻って余白の幅を8pxに変更" },
+      { text: "【正社員】印刷できているか確認し、A3で印刷" },
+      { text: "【期間雇用社員】印刷できているか確認し、A3で印刷" },
+      { text: "業務支援の確定を解除" },
+      { text: "下書きの指定表と勤務指定表をA4に縮小コピー" }
+    ]
   }
 ];
 
@@ -515,22 +548,45 @@ function syncMeetingAndPrEvents() {
             });
           }
 
-          // 古いデモ用タスクが含まれている場合、新テンプレートに上書き更新する
+          // 既存のタスクのチェック状態をテキストベースで保存
+          const checkedMap = {};
+          if (period.tasks) {
+            period.tasks.forEach(t => {
+              checkedMap[t.text] = { checked: t.checked, checkedAt: t.checkedAt };
+              if (t.subtasks) {
+                t.subtasks.forEach(st => {
+                  checkedMap[st.text] = { checked: st.checked, checkedAt: st.checkedAt };
+                });
+              }
+            });
+          }
+
+          // 古いデモ用タスクが含まれているか、カテゴリ3のタスクが未設定か、タスク数が合わない場合
           const hasLegacyTasks = period.tasks && period.tasks.some(t => t.text === "小項目１" || t.text === "小項目２");
-          if (hasLegacyTasks) {
-            period.tasks = DEFAULT_TASKS_TEMPLATE.map((t, idx) => ({
-              id: Date.now() + idx + 100,
-              categoryId: t.categoryId,
-              text: t.text,
-              checked: false,
-              checkedAt: null,
-              subtasks: t.subtasks ? t.subtasks.map((st, sIdx) => ({
-                id: Date.now() + idx + 1000 + sIdx,
-                text: st.text,
-                checked: false,
-                checkedAt: null
-              })) : []
-            }));
+          const hasNoCategory3 = !period.tasks || !period.tasks.some(t => t.categoryId === 3);
+          const isTaskCountMismatch = period.tasks && period.tasks.length !== DEFAULT_TASKS_TEMPLATE.length;
+
+          if (hasLegacyTasks || hasNoCategory3 || isTaskCountMismatch) {
+            const baseTime = Date.now();
+            period.tasks = DEFAULT_TASKS_TEMPLATE.map((t, idx) => {
+              const matchedParent = checkedMap[t.text];
+              return {
+                id: baseTime + idx + 100,
+                categoryId: t.categoryId,
+                text: t.text,
+                checked: matchedParent ? matchedParent.checked : false,
+                checkedAt: matchedParent ? matchedParent.checkedAt : null,
+                subtasks: t.subtasks ? t.subtasks.map((st, sIdx) => {
+                  const matchedSub = checkedMap[st.text];
+                  return {
+                    id: baseTime + idx + 1000 + sIdx,
+                    text: st.text,
+                    checked: matchedSub ? matchedSub.checked : false,
+                    checkedAt: matchedSub ? matchedSub.checkedAt : null
+                  };
+                }) : []
+              };
+            });
           }
         });
         saveData(); // アップグレードしたデータを保存
