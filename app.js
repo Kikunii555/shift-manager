@@ -788,9 +788,13 @@ function renderTopView() {
     // 祝日・イベント一覧の描画
     const detailsHolidaysList = document.getElementById('detailsHolidaysList');
     if (detailsHolidaysList) {
-      detailsHolidaysList.innerHTML = '';
+      detailsHolidaysList.textContent = '';
       if (!period.holidays || period.holidays.length === 0) {
-        detailsHolidaysList.innerHTML = '<span style="font-size:0.85rem; color:var(--text-secondary);">減区・イベントはありません。</span>';
+        const emptyMsg = document.createElement('span');
+        emptyMsg.style.fontSize = '0.85rem';
+        emptyMsg.style.color = 'var(--text-secondary)';
+        emptyMsg.textContent = '減区・イベントはありません。';
+        detailsHolidaysList.appendChild(emptyMsg);
       } else {
         period.holidays.forEach((h, idx) => {
           let badgeClass = 'holiday-badge';
@@ -811,9 +815,9 @@ function renderTopView() {
           const dateStr = `${d.getMonth() + 1}/${d.getDate()}`;
           const hWeek = getWeekMarker(h.date, period.startDate);
 
-          badge.innerHTML = `
-            <span>${dateStr} ${escapeHtml(h.name)}${hWeek}</span>
-          `;
+          const textSpan = document.createElement('span');
+          textSpan.textContent = `${dateStr} ${h.name}${hWeek}`;
+          badge.appendChild(textSpan);
 
           detailsHolidaysList.appendChild(badge);
         });
@@ -821,7 +825,7 @@ function renderTopView() {
     }
 
     const checklistContainer = document.getElementById('checklist');
-    checklistContainer.innerHTML = '';
+    checklistContainer.textContent = '';
 
     // カテゴリごとにタスクをグループ分けして描画
     CATEGORIES.forEach(category => {
@@ -837,12 +841,20 @@ function renderTopView() {
       const completedCatTasks = categoryTasks.filter(t => t.checked).length;
       const totalCatTasks = categoryTasks.length;
 
-      groupHeader.innerHTML = `
-        <span>${escapeHtml(category.name)}</span>
-        <span style="font-size: 0.8rem; font-weight: 600; opacity: 0.8; background: rgba(255,255,255,0.2); padding: 2px 8px; border-radius: 8px;">
-          ${completedCatTasks}/${totalCatTasks}
-        </span>
-      `;
+      const titleSpan = document.createElement('span');
+      titleSpan.textContent = category.name;
+      
+      const countSpan = document.createElement('span');
+      countSpan.style.fontSize = '0.8rem';
+      countSpan.style.fontWeight = '600';
+      countSpan.style.opacity = '0.8';
+      countSpan.style.background = 'rgba(255,255,255,0.2)';
+      countSpan.style.padding = '2px 8px';
+      countSpan.style.borderRadius = '8px';
+      countSpan.textContent = `${completedCatTasks}/${totalCatTasks}`;
+
+      groupHeader.appendChild(titleSpan);
+      groupHeader.appendChild(countSpan);
       checklistContainer.appendChild(groupHeader);
 
       // そのカテゴリにタスクがない場合の表示
@@ -868,44 +880,63 @@ function renderTopView() {
         // メインタスク行
         const mainRow = document.createElement('div');
         mainRow.className = `checklist-item ${task.checked ? 'checked' : ''}`;
-        
-        let subtasksBadgeHtml = '';
+
+        const itemLeft = document.createElement('div');
+        itemLeft.className = 'checklist-item-left';
+        itemLeft.style.flex = '1';
+        itemLeft.style.display = 'flex';
+        itemLeft.style.alignItems = 'center';
+
+        const checkbox = document.createElement('div');
+        checkbox.className = 'custom-checkbox';
+        const checkIcon = document.createElement('i');
+        checkIcon.textContent = '✓';
+        checkbox.appendChild(checkIcon);
+        itemLeft.appendChild(checkbox);
+
+        const textSpan = document.createElement('span');
+        textSpan.className = 'task-text';
+        textSpan.textContent = task.text;
+        itemLeft.appendChild(textSpan);
+
+        let badgeEl = null;
         if (hasSubtasks) {
           const completedCount = task.subtasks.filter(st => st.checked).length;
           const totalCount = task.subtasks.length;
-          subtasksBadgeHtml = `
-            <span class="subtask-badge" style="font-size: 0.75rem; background: var(--accent-color); color: white; padding: 2px 8px; border-radius: 4px; margin-left: 8px; font-weight: 600; cursor: pointer; transition: opacity 0.2s;">
-              小タスクあり (${completedCount}/${totalCount})
-            </span>
-          `;
+          badgeEl = document.createElement('span');
+          badgeEl.className = 'subtask-badge';
+          badgeEl.style.fontSize = '0.75rem';
+          badgeEl.style.background = 'var(--accent-color)';
+          badgeEl.style.color = 'white';
+          badgeEl.style.padding = '2px 8px';
+          badgeEl.style.borderRadius = '4px';
+          badgeEl.style.marginLeft = '8px';
+          badgeEl.style.fontWeight = '600';
+          badgeEl.style.cursor = 'pointer';
+          badgeEl.style.transition = 'opacity 0.2s';
+          badgeEl.textContent = `小タスクあり (${completedCount}/${totalCount})`;
+          itemLeft.appendChild(badgeEl);
         }
 
-        let checkedAtHtml = '';
+        mainRow.appendChild(itemLeft);
+
         if (task.checked && task.checkedAt) {
-          checkedAtHtml = `
-            <span class="checked-at-text" style="font-size: 0.75rem; color: var(--text-secondary); margin-left: auto; padding-right: 8px; font-weight: 500;">
-              ✓ ${formatCheckedAt(task.checkedAt)}
-            </span>
-          `;
+          const checkedAtSpan = document.createElement('span');
+          checkedAtSpan.className = 'checked-at-text';
+          checkedAtSpan.style.fontSize = '0.75rem';
+          checkedAtSpan.style.color = 'var(--text-secondary)';
+          checkedAtSpan.style.marginLeft = 'auto';
+          checkedAtSpan.style.paddingRight = '8px';
+          checkedAtSpan.style.fontWeight = '500';
+          checkedAtSpan.textContent = `✓ ${formatCheckedAt(task.checkedAt)}`;
+          mainRow.appendChild(checkedAtSpan);
         }
-
-        mainRow.innerHTML = `
-          <div class="checklist-item-left" style="flex: 1; display: flex; align-items: center;">
-            <div class="custom-checkbox">
-              <i>✓</i>
-            </div>
-            <span class="task-text">${escapeHtml(task.text)}</span>
-            ${subtasksBadgeHtml}
-          </div>
-          ${checkedAtHtml}
-        `;
 
         // 親タスククリックイベント
-        mainRow.querySelector('.checklist-item-left').addEventListener('click', (e) => {
+        itemLeft.addEventListener('click', (e) => {
           if (e.target.closest('.subtask-badge')) {
             return;
           }
-          const checkbox = mainRow.querySelector('.custom-checkbox');
           const willCheck = !task.checked;
           toggleTask(period.id, task.id);
           if (willCheck) {
@@ -930,31 +961,49 @@ function renderTopView() {
             subitem.style.borderRadius = '12px';
             subitem.style.fontSize = '0.9rem';
             
-            let subCheckedAtHtml = '';
-            if (st.checked && st.checkedAt) {
-              subCheckedAtHtml = `
-                <span class="checked-at-text" style="font-size: 0.7rem; color: var(--text-secondary); margin-left: auto; padding-right: 4px; font-weight: 500;">
-                  ✓ ${formatCheckedAt(st.checkedAt)}
-                </span>
-              `;
-            }
+            const subLeft = document.createElement('div');
+            subLeft.className = 'checklist-item-left';
+            subLeft.style.flex = '1';
+            subLeft.style.display = 'flex';
+            subLeft.style.alignItems = 'center';
+            subLeft.style.gap = '10px';
 
-            subitem.innerHTML = `
-              <div class="checklist-item-left" style="flex: 1; display: flex; align-items: center; gap: 10px;">
-                <div class="custom-checkbox" style="width: 20px; height: 20px; border-radius: 6px;">
-                  <i style="font-size: 0.7rem;">✓</i>
-                </div>
-                <span class="task-text" style="font-size: 0.9rem;">${escapeHtml(st.text)}</span>
-              </div>
-              ${subCheckedAtHtml}
-            `;
+            const subCheckbox = document.createElement('div');
+            subCheckbox.className = 'custom-checkbox';
+            subCheckbox.style.width = '20px';
+            subCheckbox.style.height = '20px';
+            subCheckbox.style.borderRadius = '6px';
+            const subCheckIcon = document.createElement('i');
+            subCheckIcon.style.fontSize = '0.7rem';
+            subCheckIcon.textContent = '✓';
+            subCheckbox.appendChild(subCheckIcon);
+            subLeft.appendChild(subCheckbox);
+
+            const subTextSpan = document.createElement('span');
+            subTextSpan.className = 'task-text';
+            subTextSpan.style.fontSize = '0.9rem';
+            subTextSpan.textContent = st.text;
+            subLeft.appendChild(subTextSpan);
+
+            subitem.appendChild(subLeft);
+
+            if (st.checked && st.checkedAt) {
+              const subCheckedAtSpan = document.createElement('span');
+              subCheckedAtSpan.className = 'checked-at-text';
+              subCheckedAtSpan.style.fontSize = '0.7rem';
+              subCheckedAtSpan.style.color = 'var(--text-secondary)';
+              subCheckedAtSpan.style.marginLeft = 'auto';
+              subCheckedAtSpan.style.paddingRight = '4px';
+              subCheckedAtSpan.style.fontWeight = '500';
+              subCheckedAtSpan.textContent = `✓ ${formatCheckedAt(st.checkedAt)}`;
+              subitem.appendChild(subCheckedAtSpan);
+            }
             
-            subitem.querySelector('.checklist-item-left').addEventListener('click', () => {
-              const checkbox = subitem.querySelector('.custom-checkbox');
+            subLeft.addEventListener('click', () => {
               const willCheck = !st.checked;
               toggleSubtask(period.id, task.id, st.id);
               if (willCheck) {
-                createSparkles(checkbox);
+                createSparkles(subCheckbox);
                 subitem.classList.add('pop-active');
                 setTimeout(() => subitem.classList.remove('pop-active'), 550);
               }
@@ -966,7 +1015,6 @@ function renderTopView() {
           item.appendChild(subtaskList);
 
           // バッジクリックでのアコーディオン開閉
-          const badgeEl = mainRow.querySelector('.subtask-badge');
           if (badgeEl) {
             badgeEl.addEventListener('click', () => {
               const isHidden = subtaskList.style.display === 'none';
@@ -1615,7 +1663,7 @@ function renderTopView() {
   function renderDetailsCalendar(period) {
     const container = document.getElementById('detailsCalendarContainer');
     if (!container) return;
-    container.innerHTML = '';
+    container.textContent = '';
 
     const startDateVal = period.startDate;
     if (!startDateVal) return;
